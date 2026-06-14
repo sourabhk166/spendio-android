@@ -52,6 +52,12 @@ object SeedTemplates {
             pattern = Regex("""\bdebit(?:ed)?\b.{0,20}?$AMOUNT""", RegexOption.IGNORE_CASE),
         ),
         NotificationTemplate(
+            // HDFC UPI SMS shape: "Sent Rs.100.00 From HDFC Bank A/C *8803 To <name>"
+            id = "sent_prefix",
+            direction = Direction.DEBIT,
+            pattern = Regex("""\bsent\b\s+$AMOUNT""", RegexOption.IGNORE_CASE),
+        ),
+        NotificationTemplate(
             id = "credited",
             direction = Direction.CREDIT,
             pattern = Regex("""$AMOUNT\s+(?:has\s+been\s+|is\s+|was\s+)?credited""", RegexOption.IGNORE_CASE),
@@ -60,6 +66,11 @@ object SeedTemplates {
             id = "received",
             direction = Direction.CREDIT,
             pattern = Regex("""$AMOUNT\s+received""", RegexOption.IGNORE_CASE),
+        ),
+        NotificationTemplate(
+            id = "received_prefix",
+            direction = Direction.CREDIT,
+            pattern = Regex("""\breceived\b\s+$AMOUNT""", RegexOption.IGNORE_CASE),
         ),
         NotificationTemplate(
             id = "credit_prefix",

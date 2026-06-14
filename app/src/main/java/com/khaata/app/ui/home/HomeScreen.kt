@@ -129,15 +129,20 @@ private fun TransactionRow(txn: TransactionUi) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.padding(end = 12.dp)) {
-                Text(txn.title, fontWeight = FontWeight.Medium)
+            Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(txn.title, fontWeight = FontWeight.Medium, maxLines = 1)
                 Text(
                     txn.occurredAtMillis.formatTime() + if (txn.needsReview) "  · needs review" else "",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
             val sign = if (txn.direction == Direction.DEBIT) "-" else "+"
-            Text("$sign${txn.amountLabel}", fontWeight = FontWeight.SemiBold)
+            Text(
+                "$sign${txn.amountLabel}",
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                softWrap = false,
+            )
         }
     }
 }

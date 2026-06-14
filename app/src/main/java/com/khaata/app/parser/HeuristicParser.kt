@@ -10,7 +10,7 @@ import com.khaata.app.domain.model.RawNotification
  * the app capturing even unseen formats (until the AI tier in Phase 2 learns them).
  */
 class HeuristicParser : TransactionParser {
-    override fun parse(input: RawNotification): ParseResult? {
+    override suspend fun parse(input: RawNotification): ParseResult? {
         val text = input.content
         val amount = AmountExtractor.firstAmount(text) ?: return null
         val direction = DirectionDetector.detect(text) ?: return null

@@ -4,24 +4,35 @@ import com.khaata.app.domain.model.ParseResult
 import com.khaata.app.domain.model.RawNotification
 
 /**
- * The orchestrator (docs/04-lld.md §4). Phase 1 wires two tiers:
- *   detector gate -> Tier 1 (regex templates) -> Tier 3 (heuristic, needsReview).
- * Tier 2 (on-device AI) slots in between them in Phase 2 without changing callers.
+ * The orchestrator (docs/04-lld.md §4):
+ *   detector gate -> Tier 1 (regex templates) -> Tier 2 (on-device AI) -> Tier 3 (heuristic).
+ *
+ * When the AI tier parses an unseen format, the result is fed to [TemplateCache.learnFrom],
+ * which induces a reusable regex template and caches it. The *next* notification of that
+ * shape is then a free Tier-1 hit — this is the self-learning loop that bounds AI calls to
+ * one per format.
  */
 class TieredTransactionParser(
     private val detector: TransactionDetector,
     private val regexTier: RegexTierParser,
     private val heuristicTier: HeuristicParser,
+    private val aiTier: AiTierParser? = null,
+    private val templateCache: TemplateCache? = null,
 ) : TransactionParser {
 
-    override fun parse(input: RawNotification): ParseResult? {
+    override suspend fun parse(input: RawNotification): ParseResult? {
         if (!detector.looksLikeTransaction(input)) return null
 
         regexTier.parse(input)
             ?.takeIf { it.isComplete && it.confidence >= HIGH_CONFIDENCE }
             ?.let { return it }
 
-        // Tier 2 (AI) will be attempted here in Phase 2.
+        // Tier 2: on-device AI for unseen formats. On success, learn a template so the
+        // next message of this shape is a Tier-1 hit.
+        aiTier?.parse(input)?.takeIf { it.isComplete }?.let { result ->
+            runCatching { templateCache?.learnFrom(input, result) }
+            return result
+        }
 
         return heuristicTier.parse(input)?.takeIf { it.isComplete }
     }

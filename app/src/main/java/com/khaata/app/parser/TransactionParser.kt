@@ -4,10 +4,10 @@ import com.khaata.app.domain.model.ParseResult
 import com.khaata.app.domain.model.RawNotification
 
 /**
- * Strategy interface for every parser tier and the orchestrator.
- * Synchronous in Phase 1 (regex only). The signature gains `suspend` in Phase 2 when
- * the on-device AI tier is introduced (see docs/05-roadmap-phases.md).
+ * Strategy interface for every parser tier and the orchestrator. `suspend` because the
+ * Tier-2 on-device AI call (Phase 2) is asynchronous; the regex/heuristic tiers implement
+ * it with non-suspending bodies.
  */
 interface TransactionParser {
-    fun parse(input: RawNotification): ParseResult?
+    suspend fun parse(input: RawNotification): ParseResult?
 }

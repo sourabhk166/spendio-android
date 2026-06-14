@@ -18,6 +18,7 @@ object TransactionFactory {
         result: ParseResult,
         sourcePackage: String,
         rawText: String?,
+        categoryId: String = Categories.UNCATEGORIZED,
         idProvider: () -> String = { UUID.randomUUID().toString() },
     ): Transaction {
         require(result.isComplete) { "Cannot build a Transaction from an incomplete ParseResult" }
@@ -30,8 +31,8 @@ object TransactionFactory {
             occurredAt = result.occurredAt ?: java.time.Instant.now(),
             accountId = result.maskedAccount,
             rawMerchant = result.rawMerchant,
-            merchant = null, // normalization happens with the categorizer in Phase 2
-            categoryId = Categories.UNCATEGORIZED,
+            merchant = null, // display normalization is a later polish step
+            categoryId = categoryId,
             note = null,
             source = TxnSource.NOTIFICATION,
             parseTier = result.tier,

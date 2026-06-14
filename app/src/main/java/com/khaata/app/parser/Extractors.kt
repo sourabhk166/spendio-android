@@ -22,6 +22,9 @@ object AmountExtractor {
 
     fun allAmounts(text: String): List<Money> =
         regex.findAll(text).mapNotNull { Money.fromRupeeString(it.groupValues[1]) }.toList()
+
+    /** Character range of the numeric part of the first amount (for template induction). */
+    fun numericRange(text: String): IntRange? = regex.find(text)?.groups?.get(1)?.range
 }
 
 object DirectionDetector {
@@ -29,8 +32,11 @@ object DirectionDetector {
         """\b(debited|debit|spent|paid|sent|withdrawn|withdrawal|purchased?|deducted|charged)\b""",
         RegexOption.IGNORE_CASE,
     )
+    // Note: bare "cashback" is intentionally NOT a credit verb — promo notifications
+    // ("₹10 cashback earned, unlock on your next payment") are not transactions. Real
+    // cashback credits say "cashback credited", which "credited" already catches.
     private val creditRegex = Regex(
-        """\b(credited|credit|received|refund(?:ed)?|deposited|added|cashback)\b""",
+        """\b(credited|credit|received|refund(?:ed)?|deposited|added)\b""",
         RegexOption.IGNORE_CASE,
     )
 

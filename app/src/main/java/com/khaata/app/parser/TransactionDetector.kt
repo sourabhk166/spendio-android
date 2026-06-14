@@ -32,8 +32,9 @@ class TransactionDetector(
             "due date", "reminder", "e-mandate", "mandate", "autopay", "scheduled",
             // failures (handled separately later, dropped for now)
             "failed", "declined", "unsuccessful", "not been processed", "could not be",
-            // promos
+            // promos / rewards (not real money movement)
             "promo", "offer ", "win ", "voucher", "flat ", "discount", "sale ",
+            "cashback earned", "unlock", "scratch card", "reward point", "you earned",
         )
     }
 }

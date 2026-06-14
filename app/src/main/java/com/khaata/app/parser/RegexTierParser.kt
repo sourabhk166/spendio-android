@@ -6,17 +6,19 @@ import com.khaata.app.domain.model.ParseTier
 import com.khaata.app.domain.model.RawNotification
 
 /**
- * Tier 1: match the notification against known templates. A hit yields a
- * high-confidence [ParseResult]. Fields not captured by the matched template
+ * Tier 1: match the notification against known templates — **learned templates first**
+ * (induced by the AI tier and cached, see [TemplateCache]), then the bundled seed set.
+ * A hit yields a high-confidence [ParseResult]; fields the template doesn't capture
  * (merchant/account/ref) are filled by the shared extractors.
  */
 class RegexTierParser(
-    private val templates: List<NotificationTemplate> = SeedTemplates.ALL,
+    private val seedTemplates: List<NotificationTemplate> = SeedTemplates.ALL,
+    private val learnedTemplates: suspend (packageName: String) -> List<NotificationTemplate> = { emptyList() },
 ) : TransactionParser {
 
-    override fun parse(input: RawNotification): ParseResult? {
+    override suspend fun parse(input: RawNotification): ParseResult? {
         val text = input.content
-        val candidates = templates.filter {
+        val candidates = learnedTemplates(input.packageName) + seedTemplates.filter {
             it.packages.isEmpty() || input.packageName in it.packages
         }
         for (t in candidates) {

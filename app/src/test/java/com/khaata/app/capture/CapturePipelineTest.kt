@@ -1,13 +1,17 @@
 package com.khaata.app.capture
 
+import com.khaata.app.ai.NoOpAiEngine
 import com.khaata.app.data.db.RawCaptureDao
 import com.khaata.app.data.db.RawCaptureEntity
 import com.khaata.app.domain.model.Money
 import com.khaata.app.domain.model.RawNotification
 import com.khaata.app.domain.model.Transaction
 import com.khaata.app.domain.repository.MonthlyTotals
+import com.khaata.app.domain.repository.RuleRepository
 import com.khaata.app.domain.repository.TransactionRepository
+import com.khaata.app.parser.Categorizer
 import com.khaata.app.parser.HeuristicParser
+import com.khaata.app.parser.MerchantNormalizer
 import com.khaata.app.parser.RegexTierParser
 import com.khaata.app.parser.SourceFilter
 import com.khaata.app.parser.TieredTransactionParser
@@ -27,9 +31,12 @@ class CapturePipelineTest {
     private val repo = FakeTransactionRepository()
     private val rawDao = FakeRawCaptureDao()
 
+    private val categorizer = Categorizer(FakeRuleRepository(), NoOpAiEngine, MerchantNormalizer())
+
     private val pipeline = CapturePipeline(
         sourceFilter = SourceFilter(),
         parser = TieredTransactionParser(TransactionDetector(), RegexTierParser(), HeuristicParser()),
+        categorizer = categorizer,
         repository = repo,
         rawCaptureDao = rawDao,
         collectRawSamples = true,
@@ -91,6 +98,14 @@ private class FakeTransactionRepository : TransactionRepository {
     override suspend fun delete(txn: Transaction) = Unit
     override suspend fun count(): Int = inserted.size
     override suspend fun wipeAll() = Unit
+}
+
+private class FakeRuleRepository : RuleRepository {
+    private val rules = mutableMapOf<String, String>()
+    override suspend fun categoryFor(merchantKey: String): String? = rules[merchantKey]
+    override suspend fun put(merchantKey: String, categoryId: String, userConfirmed: Boolean) {
+        rules[merchantKey] = categoryId
+    }
 }
 
 private class FakeRawCaptureDao : RawCaptureDao {

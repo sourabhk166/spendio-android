@@ -5,6 +5,7 @@ import com.khaata.app.data.db.RawCaptureEntity
 import com.khaata.app.domain.model.RawNotification
 import com.khaata.app.domain.model.Transaction
 import com.khaata.app.domain.repository.TransactionRepository
+import com.khaata.app.parser.Categorizer
 import com.khaata.app.parser.SourceFilter
 import com.khaata.app.parser.TransactionFactory
 import com.khaata.app.parser.TransactionParser
@@ -25,6 +26,7 @@ sealed interface CaptureOutcome {
 class CapturePipeline @Inject constructor(
     private val sourceFilter: SourceFilter,
     private val parser: TransactionParser,
+    private val categorizer: Categorizer,
     private val repository: TransactionRepository,
     private val rawCaptureDao: RawCaptureDao,
     @CollectRawSamples private val collectRawSamples: Boolean,
@@ -50,7 +52,8 @@ class CapturePipeline @Inject constructor(
 
         if (parsed == null || !parsed.isComplete) return CaptureOutcome.NotParsed
 
-        val txn = TransactionFactory.fromParse(parsed, raw.packageName, raw.text)
+        val categoryId = categorizer.categorize(parsed.rawMerchant)
+        val txn = TransactionFactory.fromParse(parsed, raw.packageName, raw.text, categoryId)
         return if (repository.insertIfNew(txn)) CaptureOutcome.Saved(txn) else CaptureOutcome.Duplicate
     }
 }
