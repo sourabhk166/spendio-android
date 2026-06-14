@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Bare platform theme used only for the activity window before Compose draws.
+      All real theming is done in Compose (ui/theme/Theme.kt). Parenting on a
+      platform theme avoids a dependency on the Material XML components library.
+    -->
+    <style name="Theme.Khaata" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
