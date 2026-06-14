@@ -45,6 +45,7 @@ fun HomeScreen(
     permissionGranted: Boolean,
     onEnableCapture: () -> Unit,
     onOpenReview: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -58,6 +59,11 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            item {
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onOpenSettings) { Text("Settings") }
+                }
+            }
             item {
                 MonthHeader(
                     label = state.month.formatLabel(),

@@ -1,40 +1,48 @@
 package com.khaata.app.parser
 
+/** A known financial source the app can read, with a user-facing name for the allow-list UI. */
+data class KnownSource(val packageName: String, val displayName: String)
+
 /**
- * Allowlist of packages whose notifications we even look at. Everything else is
- * ignored immediately (privacy + performance). Bank SMS also surface as notifications
- * from the device's default messaging app, so common messaging packages are included;
- * the [TransactionDetector] then decides whether the message is actually a transaction.
+ * Allowlist of packages whose notifications we even look at. Everything else is ignored
+ * immediately (privacy + performance). The user can turn individual sources OFF in
+ * Settings; [disabledSources] supplies those. Bank SMS also surface as notifications from
+ * the device's default messaging app, so messaging packages are included; the
+ * [TransactionDetector] then decides whether the message is actually a transaction.
  */
 class SourceFilter(
-    private val allowed: Set<String> = DEFAULT_FINANCIAL_PACKAGES,
+    private val known: Set<String> = KnownSources.PACKAGES,
+    private val disabledSources: suspend () -> Set<String> = { emptySet() },
 ) {
-    fun isFinancialSource(packageName: String): Boolean = packageName in allowed
+    suspend fun isFinancialSource(packageName: String): Boolean =
+        packageName in known && packageName !in disabledSources()
+}
 
-    companion object {
-        val DEFAULT_FINANCIAL_PACKAGES: Set<String> = setOf(
-            // UPI / payment apps
-            "com.phonepe.app",                              // PhonePe
-            "com.google.android.apps.nbu.paisa.user",       // Google Pay (India)
-            "net.one97.paytm",                              // Paytm
-            "in.org.npci.upiapp",                           // BHIM
-            "com.dreamplug.androidapp",                     // CRED
-            "com.whatsapp",                                 // WhatsApp Pay (noisy; detector filters)
-            // Bank apps
-            "com.snapwork.hdfc",                            // HDFC Bank
-            "com.csam.icici.bank.imobile",                  // ICICI iMobile
-            "com.sbi.lotusintouch",                         // YONO SBI
-            "com.sbi.SBIFreedomPlus",                       // SBI Anywhere
-            "com.axis.mobile",                              // Axis
-            "com.msf.kbank.mobile",                         // Kotak
-            "com.bankofbaroda.mconnect",                    // BoB
-            "com.infrasofttech.indianbank",                 // Indian Bank
-            "com.fss.pnb",                                  // PNB
-            // Default messaging apps (bank SMS arrive here as notifications)
-            "com.google.android.apps.messaging",            // Google Messages
-            "com.samsung.android.messaging",                // Samsung Messages
-            "com.android.messaging",                        // AOSP Messaging
-            "com.android.mms",                              // AOSP MMS
-        )
-    }
+object KnownSources {
+    val ALL: List<KnownSource> = listOf(
+        // UPI / payment apps
+        KnownSource("com.phonepe.app", "PhonePe"),
+        KnownSource("com.google.android.apps.nbu.paisa.user", "Google Pay"),
+        KnownSource("net.one97.paytm", "Paytm"),
+        KnownSource("in.org.npci.upiapp", "BHIM"),
+        KnownSource("com.dreamplug.androidapp", "CRED"),
+        KnownSource("com.whatsapp", "WhatsApp Pay"),
+        // Bank apps
+        KnownSource("com.snapwork.hdfc", "HDFC Bank"),
+        KnownSource("com.csam.icici.bank.imobile", "ICICI iMobile"),
+        KnownSource("com.sbi.lotusintouch", "YONO SBI"),
+        KnownSource("com.sbi.SBIFreedomPlus", "SBI Anywhere"),
+        KnownSource("com.axis.mobile", "Axis Mobile"),
+        KnownSource("com.msf.kbank.mobile", "Kotak"),
+        KnownSource("com.bankofbaroda.mconnect", "Bank of Baroda"),
+        KnownSource("com.infrasofttech.indianbank", "Indian Bank"),
+        KnownSource("com.fss.pnb", "PNB"),
+        // Default messaging apps (bank SMS arrive here as notifications)
+        KnownSource("com.google.android.apps.messaging", "Google Messages"),
+        KnownSource("com.samsung.android.messaging", "Samsung Messages"),
+        KnownSource("com.android.messaging", "Messages"),
+        KnownSource("com.android.mms", "Messaging"),
+    )
+
+    val PACKAGES: Set<String> = ALL.map { it.packageName }.toSet()
 }

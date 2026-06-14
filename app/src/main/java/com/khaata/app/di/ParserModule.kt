@@ -3,6 +3,7 @@ package com.khaata.app.di
 import com.khaata.app.BuildConfig
 import com.khaata.app.ai.AiEngine
 import com.khaata.app.capture.CollectRawSamples
+import com.khaata.app.data.prefs.SettingsStore
 import com.khaata.app.parser.AiTierParser
 import com.khaata.app.parser.HeuristicParser
 import com.khaata.app.parser.RegexTierParser
@@ -23,7 +24,8 @@ import javax.inject.Singleton
 object ParserModule {
 
     @Provides @Singleton
-    fun provideSourceFilter(): SourceFilter = SourceFilter()
+    fun provideSourceFilter(settings: SettingsStore): SourceFilter =
+        SourceFilter(disabledSources = { settings.disabledSourcesOnce() })
 
     @Provides @Singleton
     fun provideDetector(): TransactionDetector = TransactionDetector()

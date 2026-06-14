@@ -71,6 +71,11 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.biometric)
+    implementation(libs.sqlcipher)
+    implementation(libs.androidx.sqlite)
+
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
