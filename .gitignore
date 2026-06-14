@@ -1,0 +1,45 @@
+# Android / Gradle / Kotlin .gitignore
+
+# Gradle
+.gradle/
+build/
+**/build/
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# Local config (never commit)
+local.properties
+*.keystore
+*.jks
+keystore.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+captures/
+.navigation/
+.cxx/
+
+# Logs & temp
+*.log
+*.hprof
+.DS_Store
+Thumbs.db
+
+# Build outputs
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+output.json
+
+# Misc
+.externalNativeBuild/
+proguard/
+release/
+
+# Kotlin
+.kotlin/
