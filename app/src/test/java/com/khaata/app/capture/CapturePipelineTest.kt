@@ -94,6 +94,11 @@ private class FakeTransactionRepository : TransactionRepository {
     override fun observeMonth(month: YearMonth): Flow<List<Transaction>> = emptyFlow()
     override fun observeMonthlyTotals(month: YearMonth): Flow<MonthlyTotals> =
         flowOf(MonthlyTotals(Money.ZERO, Money.ZERO))
+    override fun observeCategoryBreakdown(month: YearMonth) = emptyFlow<List<com.khaata.app.domain.model.CategorySlice>>()
+    override fun observeNeedsReview(): Flow<List<Transaction>> = emptyFlow()
+    override fun observeNeedsReviewCount(): Flow<Int> = flowOf(0)
+    override suspend fun approveReview(id: String) = Unit
+    override suspend fun recategorize(id: String, categoryId: String) = Unit
     override suspend fun update(txn: Transaction) = Unit
     override suspend fun delete(txn: Transaction) = Unit
     override suspend fun count(): Int = inserted.size

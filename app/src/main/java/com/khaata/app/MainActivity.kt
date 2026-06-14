@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
 import com.khaata.app.capture.NotificationAccess
-import com.khaata.app.ui.home.HomeScreen
+import com.khaata.app.ui.AppNav
 import com.khaata.app.ui.onboarding.PermissionScreen
 import com.khaata.app.ui.theme.KhaataTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,10 +24,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             KhaataTheme {
                 if (captureEnabled.value) {
-                    HomeScreen(
-                        permissionGranted = true,
-                        onEnableCapture = { NotificationAccess.openSettings(this) },
-                    )
+                    AppNav(onEnableCapture = { NotificationAccess.openSettings(this) })
                 } else {
                     PermissionScreen(
                         onGrantClick = { NotificationAccess.openSettings(this) },

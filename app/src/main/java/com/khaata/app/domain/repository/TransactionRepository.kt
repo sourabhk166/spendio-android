@@ -1,5 +1,6 @@
 package com.khaata.app.domain.repository
 
+import com.khaata.app.domain.model.CategorySlice
 import com.khaata.app.domain.model.Money
 import com.khaata.app.domain.model.Transaction
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +17,16 @@ interface TransactionRepository {
     fun observeMonth(month: YearMonth): Flow<List<Transaction>>
 
     fun observeMonthlyTotals(month: YearMonth): Flow<MonthlyTotals>
+
+    fun observeCategoryBreakdown(month: YearMonth): Flow<List<CategorySlice>>
+
+    fun observeNeedsReview(): Flow<List<Transaction>>
+
+    fun observeNeedsReviewCount(): Flow<Int>
+
+    suspend fun approveReview(id: String)
+
+    suspend fun recategorize(id: String, categoryId: String)
 
     suspend fun update(txn: Transaction)
 

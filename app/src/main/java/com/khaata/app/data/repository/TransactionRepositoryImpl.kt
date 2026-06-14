@@ -3,7 +3,9 @@ package com.khaata.app.data.repository
 import com.khaata.app.data.db.TransactionDao
 import com.khaata.app.data.mapper.toDomain
 import com.khaata.app.data.mapper.toEntity
+import com.khaata.app.domain.model.CategorySlice
 import com.khaata.app.domain.model.Direction
+import com.khaata.app.domain.model.Insights
 import com.khaata.app.domain.model.Money
 import com.khaata.app.domain.model.Transaction
 import com.khaata.app.domain.repository.MonthlyTotals
@@ -38,6 +40,22 @@ class TransactionRepositoryImpl @Inject constructor(
         val income = dao.observeTotal(Direction.CREDIT.name, from, to)
         return combine(spent, income) { s, i -> MonthlyTotals(Money(s), Money(i)) }
     }
+
+    override fun observeCategoryBreakdown(month: YearMonth): Flow<List<CategorySlice>> {
+        val (from, to) = month.bounds()
+        return dao.observeCategoryTotals(from, to).map { rows ->
+            Insights.slices(rows.associate { it.categoryId to it.total })
+        }
+    }
+
+    override fun observeNeedsReview(): Flow<List<Transaction>> =
+        dao.observeNeedsReview().map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeNeedsReviewCount(): Flow<Int> = dao.observeNeedsReviewCount()
+
+    override suspend fun approveReview(id: String) = dao.approveReview(id)
+
+    override suspend fun recategorize(id: String, categoryId: String) = dao.recategorize(id, categoryId)
 
     override suspend fun update(txn: Transaction) = dao.update(txn.toEntity())
 

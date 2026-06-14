@@ -44,6 +44,18 @@ interface TransactionDao {
     )
     fun observeCategoryTotals(from: Long, to: Long): Flow<List<CategoryTotal>>
 
+    @Query("SELECT * FROM transactions WHERE needsReview = 1 ORDER BY occurredAt DESC")
+    fun observeNeedsReview(): Flow<List<TransactionEntity>>
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE needsReview = 1")
+    fun observeNeedsReviewCount(): Flow<Int>
+
+    @Query("UPDATE transactions SET needsReview = 0 WHERE id = :id")
+    suspend fun approveReview(id: String)
+
+    @Query("UPDATE transactions SET categoryId = :categoryId, needsReview = 0 WHERE id = :id")
+    suspend fun recategorize(id: String, categoryId: String)
+
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getById(id: String): TransactionEntity?
 
