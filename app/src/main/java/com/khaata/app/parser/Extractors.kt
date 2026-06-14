@@ -40,7 +40,11 @@ object DirectionDetector {
         RegexOption.IGNORE_CASE,
     )
 
-    /** Returns the direction, choosing the keyword that appears earliest when both exist. */
+    // Verb-less outgoing transfer shape: "Rs.X From <bank> A/c <num> To <payee>".
+    private val fromAcctToRegex = Regex("""\bfrom\b.{0,40}?\ba/?c\b.{0,80}?\bto\b""", RegexOption.IGNORE_CASE)
+
+    /** Returns the direction, choosing the keyword that appears earliest when both exist.
+     *  Falls back to a structural "from <a/c> … to <payee>" = DEBIT rule. */
     fun detect(text: String): Direction? {
         val d = debitRegex.find(text)?.range?.first
         val c = creditRegex.find(text)?.range?.first
@@ -48,6 +52,7 @@ object DirectionDetector {
             d != null && c == null -> Direction.DEBIT
             c != null && d == null -> Direction.CREDIT
             d != null && c != null -> if (d <= c) Direction.DEBIT else Direction.CREDIT
+            fromAcctToRegex.containsMatchIn(text) -> Direction.DEBIT
             else -> null
         }
     }
@@ -83,17 +88,23 @@ object MerchantExtractor {
         Regex("""(?:to|at)\s+vpa\s+(\S+)""", RegexOption.IGNORE_CASE),
         Regex("""\bvpa\s+(\S+)""", RegexOption.IGNORE_CASE),
         Regex(
-            """paid\s+to\s+([A-Za-z0-9 ._&'@-]{2,40}?)(?=\s+(?:via|on|using|ref|upi|dt|date)\b|[.,;]|$)""",
+            """paid\s+to\s+([A-Za-z0-9 ._&'@*-]{2,40}?)(?=\s+(?:via|on|using|ref|upi|dt|date)\b|[.,;]|$)""",
             RegexOption.IGNORE_CASE,
         ),
         Regex(
-            """(?:to|at)\s+([A-Za-z0-9 ._&'@-]{2,40}?)(?=\s+(?:via|on|using|ref|upi|dt|date)\b|[.,;]|$)""",
+            """(?:to|at)\s+([A-Za-z0-9 ._&'@*-]{2,40}?)(?=\s+(?:via|on|using|ref|upi|dt|date)\b|[.,;]|$)""",
             RegexOption.IGNORE_CASE,
         ),
     )
 
     fun extract(text: String): String? {
-        for (p in patterns) p.find(text)?.let { return it.groupValues[1].trim().ifBlank { null } }
+        for (p in patterns) {
+            p.findAll(text).forEach { m ->
+                val candidate = m.groupValues[1].trim()
+                // Require at least one letter so we don't grab a trailing helpline number etc.
+                if (candidate.isNotBlank() && candidate.any(Char::isLetter)) return candidate
+            }
+        }
         return null
     }
 }

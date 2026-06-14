@@ -27,9 +27,10 @@ class TransactionDetector(
             // money requests (not a completed txn)
             "requested", "is requesting", "request money", "collect request", "payment request",
             "has requested",
-            // future / scheduled / reminders
+            // future / scheduled / reminders / bill nudges
             "will be debited", "will be deducted", "will be charged", "is due", "due on",
             "due date", "reminder", "e-mandate", "mandate", "autopay", "scheduled",
+            "amount due", "pay instantly", "ignore if paid", "min amount due",
             // failures (handled separately later, dropped for now)
             "failed", "declined", "unsuccessful", "not been processed", "could not be",
             // promos / rewards (not real money movement)

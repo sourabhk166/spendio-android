@@ -32,7 +32,7 @@ object SeedTemplates {
             id = "paid_to",
             direction = Direction.DEBIT,
             pattern = Regex(
-                """$AMOUNT\s+paid\s+to\s+(?<merchant>[A-Za-z0-9 ._&'@-]{2,40}?)(?=\s+(?:via|on|using|ref|upi)\b|[.,;]|$)""",
+                """$AMOUNT\s+paid\s+to\s+(?<merchant>[A-Za-z0-9 ._&'@*-]{2,40}?)(?=\s+(?:via|on|using|ref|upi)\b|[.,;]|$)""",
                 RegexOption.IGNORE_CASE,
             ),
         ),
@@ -45,6 +45,21 @@ object SeedTemplates {
             id = "spent",
             direction = Direction.DEBIT,
             pattern = Regex("""$AMOUNT\s+(?:has\s+been\s+|was\s+)?spent""", RegexOption.IGNORE_CASE),
+        ),
+        NotificationTemplate(
+            // verb-BEFORE-amount: HDFC/Axis/SBI cards — "Spent Rs.222 On …" / "Spent INR 170"
+            id = "spent_prefix",
+            direction = Direction.DEBIT,
+            pattern = Regex("""\bspent\b\s+$AMOUNT""", RegexOption.IGNORE_CASE),
+        ),
+        NotificationTemplate(
+            // verb-less HDFC debit: "Rs.625.00 From HDFC Bank A/C *8803 To FRZ.COM … On …"
+            id = "from_acct_to",
+            direction = Direction.DEBIT,
+            pattern = Regex(
+                """$AMOUNT\s+from\s+.{0,40}?a/?c\b.{0,20}?\bto\b\s+(?<merchant>[A-Za-z0-9 ._&'@*-]{2,40}?)(?=\s+on\b|[.,;]|$)""",
+                RegexOption.IGNORE_CASE,
+            ),
         ),
         NotificationTemplate(
             id = "debit_prefix",
