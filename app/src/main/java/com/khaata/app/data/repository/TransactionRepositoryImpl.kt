@@ -1,0 +1,55 @@
+package com.khaata.app.data.repository
+
+import com.khaata.app.data.db.TransactionDao
+import com.khaata.app.data.mapper.toDomain
+import com.khaata.app.data.mapper.toEntity
+import com.khaata.app.domain.model.Direction
+import com.khaata.app.domain.model.Money
+import com.khaata.app.domain.model.Transaction
+import com.khaata.app.domain.repository.MonthlyTotals
+import com.khaata.app.domain.repository.TransactionRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import java.time.YearMonth
+import java.time.ZoneId
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class TransactionRepositoryImpl @Inject constructor(
+    private val dao: TransactionDao,
+) : TransactionRepository {
+
+    override suspend fun insertIfNew(txn: Transaction): Boolean =
+        dao.insert(txn.toEntity()) != -1L
+
+    override fun observeRecent(limit: Int): Flow<List<Transaction>> =
+        dao.observeRecent(limit).map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeMonth(month: YearMonth): Flow<List<Transaction>> {
+        val (from, to) = month.bounds()
+        return dao.observeBetween(from, to).map { rows -> rows.map { it.toDomain() } }
+    }
+
+    override fun observeMonthlyTotals(month: YearMonth): Flow<MonthlyTotals> {
+        val (from, to) = month.bounds()
+        val spent = dao.observeTotal(Direction.DEBIT.name, from, to)
+        val income = dao.observeTotal(Direction.CREDIT.name, from, to)
+        return combine(spent, income) { s, i -> MonthlyTotals(Money(s), Money(i)) }
+    }
+
+    override suspend fun update(txn: Transaction) = dao.update(txn.toEntity())
+
+    override suspend fun delete(txn: Transaction) = dao.delete(txn.toEntity())
+
+    override suspend fun count(): Int = dao.count()
+
+    override suspend fun wipeAll() = dao.wipe()
+
+    private fun YearMonth.bounds(zone: ZoneId = ZoneId.systemDefault()): Pair<Long, Long> {
+        val from = atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val to = atEndOfMonth().atTime(23, 59, 59).atZone(zone).toInstant().toEpochMilli()
+        return from to to
+    }
+}
