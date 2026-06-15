@@ -39,4 +39,26 @@ class TransactionDetectorTest {
     @Test fun `non-financial text is rejected`() {
         assertFalse(detector.looksLikeTransaction(notif("Lunch at 1pm?")))
     }
+
+    @Test fun `reward marketing referencing a real payment is rejected`() {
+        // CRED's reward push during testing: has ₹ amount + "payment ... completed" verb,
+        // but it is marketing, not a money movement.
+        assertFalse(
+            detector.looksLikeTransaction(
+                notif("good news: your payment of Rs.283 on Eatclub was completed. claim your reward"),
+            ),
+        )
+    }
+
+    @Test fun `you earned a reward is rejected`() {
+        assertFalse(detector.looksLikeTransaction(notif("You've earned a reward of Rs.50, redeem now")))
+    }
+
+    @Test fun `genuine card spend is still a transaction`() {
+        assertTrue(
+            detector.looksLikeTransaction(
+                notif("Rs.283.00 spent on your SBI Credit Card ending 3917 at EATCLUB on 15/06/26"),
+            ),
+        )
+    }
 }

@@ -37,29 +37,57 @@ class CategorizerTest {
         assertEquals(Categories.FOOD, c.categorize("Swiggy"))
     }
 
+    // "Acme" is deliberately a merchant the keyword dictionary does NOT know, so these
+    // tests exercise the AI tier that sits behind it (Amazon/Swiggy/etc. now short-circuit
+    // at the keyword tier).
     @Test fun `ai prediction is used and cached`() = runTest {
         val rules = MapRuleRepository()
         val c = Categorizer(rules, FakeAiEngine(category = Categories.SHOPPING), MerchantNormalizer())
-        assertEquals(Categories.SHOPPING, c.categorize("Amazon"))
-        assertEquals(Categories.SHOPPING, rules.categoryFor("amazon"))
+        assertEquals(Categories.SHOPPING, c.categorize("Acme"))
+        assertEquals(Categories.SHOPPING, rules.categoryFor("acme"))
     }
 
     @Test fun `user correction overrides the ai guess`() = runTest {
         val rules = MapRuleRepository()
         val c = Categorizer(rules, FakeAiEngine(category = Categories.SHOPPING), MerchantNormalizer())
-        c.categorize("Amazon")
-        c.correct("Amazon", Categories.GROCERIES)
-        assertEquals(Categories.GROCERIES, c.categorize("Amazon"))
+        c.categorize("Acme")
+        c.correct("Acme", Categories.GROCERIES)
+        assertEquals(Categories.GROCERIES, c.categorize("Acme"))
     }
 
     @Test fun `unknown category from ai is ignored`() = runTest {
         val c = Categorizer(MapRuleRepository(), FakeAiEngine(category = "not-a-real-category"), MerchantNormalizer())
-        assertEquals(Categories.UNCATEGORIZED, c.categorize("Amazon"))
+        assertEquals(Categories.UNCATEGORIZED, c.categorize("Acme"))
     }
 
     @Test fun `no merchant and no-op ai stay uncategorized`() = runTest {
         val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
         assertEquals(Categories.UNCATEGORIZED, c.categorize(null))
         assertEquals(Categories.UNCATEGORIZED, c.categorize("Some New Merchant"))
+    }
+
+    @Test fun `keyword dictionary categorizes known merchants without ai`() = runTest {
+        // NoOp AI = the common case on non-Pixel devices. The keyword tier must still work.
+        val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
+        assertEquals(Categories.FOOD, c.categorize("EATCLUB"))
+        assertEquals(Categories.FOOD, c.categorize("Swiggy"))
+        assertEquals(Categories.TRANSPORT, c.categorize("UBER India"))
+        assertEquals(Categories.SHOPPING, c.categorize("AMAZON"))
+        assertEquals(Categories.GROCERIES, c.categorize("Blinkit"))
+    }
+
+    @Test fun `keyword tier does not persist a guess as a rule`() = runTest {
+        val rules = MapRuleRepository()
+        val c = Categorizer(rules, NoOpAiEngine, MerchantNormalizer())
+        assertEquals(Categories.FOOD, c.categorize("Swiggy"))
+        // Deterministic dictionary, so nothing is cached — unlike an AI guess.
+        assertNull(rules.categoryFor("swiggy"))
+    }
+
+    @Test fun `user correction still overrides a keyword match`() = runTest {
+        val rules = MapRuleRepository()
+        val c = Categorizer(rules, NoOpAiEngine, MerchantNormalizer())
+        c.correct("Swiggy", Categories.OTHER)
+        assertEquals(Categories.OTHER, c.categorize("Swiggy"))
     }
 }

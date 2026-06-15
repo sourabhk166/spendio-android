@@ -20,7 +20,7 @@ object CategoryCatalog {
         CategoryInfo(Categories.TRANSFERS, "Transfers", "🔁", "#78909C"),
         CategoryInfo(Categories.INCOME, "Income", "💰", "#9CCC65"),
         CategoryInfo(Categories.OTHER, "Other", "📌", "#8D6E63"),
-        CategoryInfo(Categories.UNCATEGORIZED, "Uncategorized", "❓", "#9E9E9E"),
+        CategoryInfo(Categories.UNCATEGORIZED, "Uncategorized", "🧾", "#9E9E9E"),
     )
 
     private val byId: Map<String, CategoryInfo> = all.associateBy { it.id }

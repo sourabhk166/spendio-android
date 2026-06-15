@@ -68,7 +68,7 @@ fun ReviewScreen(
                 modifier = Modifier.padding(bottom = 4.dp),
             )
             Text(
-                text = "These transactions had low-confidence heuristic parsing. Approve or correct each one.",
+                text = "We weren't fully sure we read these right. Tap to confirm or fix each one.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -134,7 +134,7 @@ private fun ReviewCard(
                     .padding(horizontal = 10.dp, vertical = 5.dp),
             ) {
                 Text(
-                    text = "⚠  Heuristic parse · low confidence",
+                    text = "⚠  Double-check this one",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )

@@ -33,9 +33,15 @@ class TransactionDetector(
             "amount due", "pay instantly", "ignore if paid", "min amount due",
             // failures (handled separately later, dropped for now)
             "failed", "declined", "unsuccessful", "not been processed", "could not be",
-            // promos / rewards (not real money movement)
+            // promos / rewards / marketing (not real money movement). These often *reference*
+            // a real payment ("your payment of ₹283 ... was completed, claim your reward") so
+            // they have an amount + a debit-ish verb and would otherwise pass — e.g. CRED's
+            // reward push that hijacked a genuine SBI card spend during testing.
             "promo", "offer ", "win ", "voucher", "flat ", "discount", "sale ",
             "cashback earned", "unlock", "scratch card", "reward point", "you earned",
+            "earned a reward", "claim your reward", "claim now", "your reward",
+            "good news", "congratulations", "congrats", "you've won", "youve won",
+            "lucky", "giveaway", "redeem",
         )
     }
 }

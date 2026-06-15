@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.khaata.app.domain.model.Categories
 import com.khaata.app.domain.model.CategoryCatalog
 import com.khaata.app.domain.model.CategorySlice
 import com.khaata.app.domain.model.Direction
@@ -273,7 +274,18 @@ private fun TransactionRow(txn: TransactionUi) {
                     .background(catColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(txn.categoryEmoji, style = MaterialTheme.typography.titleMedium)
+                // Uncategorized merchants show their initial (like most money apps) instead of
+                // a generic icon — cleaner than a question mark and still identifies the payee.
+                if (txn.categoryId == Categories.UNCATEGORIZED) {
+                    Text(
+                        text = txn.title.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text(txn.categoryEmoji, style = MaterialTheme.typography.titleMedium)
+                }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {

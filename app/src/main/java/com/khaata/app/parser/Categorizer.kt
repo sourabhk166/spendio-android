@@ -7,8 +7,10 @@ import javax.inject.Inject
 
 /**
  * Resolves a merchant to a category (docs/04-lld.md §5):
- *   normalize -> cached rule -> AI classify (cache the guess) -> uncategorized.
- * User corrections feed back through [correct] and win over AI guesses forever.
+ *   normalize -> cached rule -> keyword dictionary -> AI classify (cache the guess) -> uncategorized.
+ * The keyword tier is deterministic and device-independent, so categorization works even
+ * where on-device AI is unavailable (i.e. nearly all devices). User corrections feed back
+ * through [correct] and win over every guess forever.
  */
 class Categorizer @Inject constructor(
     private val rules: RuleRepository,
@@ -18,6 +20,7 @@ class Categorizer @Inject constructor(
     suspend fun categorize(rawMerchant: String?): String {
         val key = normalizer.normalize(rawMerchant) ?: return Categories.UNCATEGORIZED
         rules.categoryFor(key)?.let { return it }
+        MerchantKeywords.categoryFor(key)?.let { return it }
         val predicted = ai.classifyCategory(key) ?: return Categories.UNCATEGORIZED
         if (predicted !in Categories.ALL) return Categories.UNCATEGORIZED
         rules.put(key, predicted, userConfirmed = false)
