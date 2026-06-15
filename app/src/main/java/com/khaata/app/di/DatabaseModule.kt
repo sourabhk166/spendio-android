@@ -26,8 +26,10 @@ object DatabaseModule {
         @ApplicationContext context: Context,
         databaseKey: DatabaseKey,
     ): KhaataDatabase {
-        // sqlcipher-android (4.6+) auto-loads its native libs via System.loadLibrary,
-        // so the old SQLiteDatabase.loadLibs(context) bootstrap is no longer needed.
+        // sqlcipher-android (4.6+) replaced the old SQLiteDatabase.loadLibs(context)
+        // bootstrap with a plain System.loadLibrary; without it the JNI nativeOpen has
+        // no implementation and the first DB access crashes with UnsatisfiedLinkError.
+        System.loadLibrary("sqlcipher")
         deleteLegacyPlainDatabase(context)
         val factory = SupportOpenHelperFactory(databaseKey.getOrCreatePassphrase())
         return Room.databaseBuilder(context, KhaataDatabase::class.java, KhaataDatabase.NAME)
