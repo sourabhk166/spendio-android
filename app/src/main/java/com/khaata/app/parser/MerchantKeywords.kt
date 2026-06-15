@@ -70,7 +70,7 @@ object MerchantKeywords {
         "bpcl" to Categories.TRANSPORT,
         "iocl" to Categories.TRANSPORT,
         "railway" to Categories.TRANSPORT,
-        "ola " to Categories.TRANSPORT,
+        "ola" to Categories.TRANSPORT,
 
         // ── Shopping ────────────────────────────────────────────────────────────────
         "amazon" to Categories.SHOPPING,
@@ -141,9 +141,21 @@ object MerchantKeywords {
         "dividend" to Categories.INCOME,
     )
 
-    /** First category whose keyword appears in [normalizedMerchant], or null if none match. */
+    /**
+     * First category whose keyword matches [normalizedMerchant], or null. Matching is
+     * token-aware so a bare "ola" hits the merchant "ola" / "olacabs" but not "chocolate":
+     *   - multi-word keywords ("tata power") match as a substring phrase
+     *   - single-word keywords match a token exactly or as a token prefix
+     */
     fun categoryFor(normalizedMerchant: String): String? {
         val s = normalizedMerchant.lowercase()
-        return entries.firstOrNull { (keyword, _) -> s.contains(keyword) }?.second
+        val tokens = s.split(' ').filter { it.isNotBlank() }
+        return entries.firstOrNull { (keyword, _) ->
+            if (keyword.contains(' ')) {
+                s.contains(keyword)
+            } else {
+                tokens.any { it == keyword || it.startsWith(keyword) }
+            }
+        }?.second
     }
 }

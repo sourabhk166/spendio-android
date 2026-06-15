@@ -1,5 +1,6 @@
 package com.khaata.app.ui.editor
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -32,8 +35,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,7 +59,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.khaata.app.domain.model.CategoryCatalog
-import com.khaata.app.domain.model.Categories
 import com.khaata.app.domain.model.Direction
 import java.time.Instant
 import java.time.ZoneId
@@ -59,129 +66,127 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+private val FieldShape = RoundedCornerShape(12.dp)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditTransactionScreen(
     txnId: String?,
     onClose: () -> Unit,
     viewModel: AddEditTransactionViewModel = hiltViewModel(),
 ) {
-    LaunchedEffect(Unit) { viewModel.load(txnId) }
+    LaunchedEffect(txnId) { viewModel.load(txnId) }
     val form by viewModel.form.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
-    ) {
-        // ── Top bar ──────────────────────────────────────────────────────────────
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onClose) {
-                Text("‹", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface)
-            }
-            Text(
-                text = if (form.isEdit) "Edit transaction" else "Add transaction",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
+    // System back should return to the tab we came from, not exit the app.
+    BackHandler { onClose() }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = if (form.isEdit) "Edit transaction" else "Add transaction",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onClose) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (form.canDelete) {
+                        IconButton(onClick = { viewModel.delete(onClose) }) {
+                            Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                ),
             )
-            if (form.canDelete) {
-                IconButton(onClick = { viewModel.delete(onClose) }) {
-                    Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        // ── Expense / Income toggle ──────────────────────────────────────────────
-        DirectionToggle(
-            selected = form.direction,
-            onSelect = viewModel::onDirectionChange,
-        )
-
-        Spacer(Modifier.height(20.dp))
-
-        // ── Amount ───────────────────────────────────────────────────────────────
-        OutlinedTextField(
-            value = form.amountInput,
-            onValueChange = viewModel::onAmountChange,
-            label = { Text("Amount") },
-            prefix = { Text("₹ ") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            textStyle = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(14.dp))
-
-        // ── Description / merchant ───────────────────────────────────────────────
-        OutlinedTextField(
-            value = form.merchant,
-            onValueChange = viewModel::onMerchantChange,
-            label = { Text("Description") },
-            placeholder = { Text("e.g. Auto rickshaw, Chai, Rent") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(14.dp))
-
-        // ── Category ─────────────────────────────────────────────────────────────
-        CategoryField(
-            categoryId = form.categoryId,
-            onPick = viewModel::onCategoryChange,
-        )
-
-        Spacer(Modifier.height(14.dp))
-
-        // ── Date ─────────────────────────────────────────────────────────────────
-        FieldRow(label = "Date", value = form.occurredAt.formatDate(), onClick = { showDatePicker = true })
-
-        Spacer(Modifier.height(14.dp))
-
-        // ── Note (optional) ──────────────────────────────────────────────────────
-        OutlinedTextField(
-            value = form.note,
-            onValueChange = viewModel::onNoteChange,
-            label = { Text("Note (optional)") },
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        if (form.error != null) {
-            Spacer(Modifier.height(10.dp))
-            Text(form.error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        Button(
-            onClick = { viewModel.save(onClose) },
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(
-                text = if (form.isEdit) "Save changes" else "Add transaction",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
-            )
-        }
+            DirectionToggle(selected = form.direction, onSelect = viewModel::onDirectionChange)
 
-        Spacer(Modifier.height(24.dp))
+            OutlinedTextField(
+                value = form.amountInput,
+                onValueChange = viewModel::onAmountChange,
+                label = { Text("Amount") },
+                prefix = { Text("₹ ") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                textStyle = MaterialTheme.typography.headlineSmall,
+                shape = FieldShape,
+                colors = khaataFieldColors(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            OutlinedTextField(
+                value = form.merchant,
+                onValueChange = viewModel::onMerchantChange,
+                label = { Text("Description") },
+                placeholder = { Text("e.g. Auto rickshaw, Chai, Rent") },
+                singleLine = true,
+                shape = FieldShape,
+                colors = khaataFieldColors(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            CategoryField(categoryId = form.categoryId, onPick = viewModel::onCategoryChange)
+
+            PickerRow(label = "Date", value = form.occurredAt.formatDate(), onClick = { showDatePicker = true })
+
+            OutlinedTextField(
+                value = form.note,
+                onValueChange = viewModel::onNoteChange,
+                label = { Text("Note (optional)") },
+                shape = FieldShape,
+                colors = khaataFieldColors(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            if (form.error != null) {
+                Text(form.error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Button(
+                onClick = { viewModel.save(onClose) },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = FieldShape,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            ) {
+                Text(
+                    text = if (form.isEdit) "Save changes" else "Add transaction",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+        }
     }
 
     if (showDatePicker) {
         DatePickerSheet(
             initialMillis = form.occurredAt.toEpochMilli(),
-            onConfirm = { instant ->
-                viewModel.onDateChange(instant)
+            onConfirm = {
+                viewModel.onDateChange(it)
                 showDatePicker = false
             },
             onDismiss = { showDatePicker = false },
@@ -192,39 +197,49 @@ fun AddEditTransactionScreen(
 @Composable
 private fun DirectionToggle(selected: Direction, onSelect: (Direction) -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ToggleHalf("Expense", selected == Direction.DEBIT, MaterialTheme.colorScheme.error) { onSelect(Direction.DEBIT) }
-        ToggleHalf("Income", selected == Direction.CREDIT, MaterialTheme.colorScheme.primary) { onSelect(Direction.CREDIT) }
+        TypeSegment(
+            label = "Expense",
+            selected = selected == Direction.DEBIT,
+            accent = MaterialTheme.colorScheme.error,
+            modifier = Modifier.weight(1f),
+        ) { onSelect(Direction.DEBIT) }
+        TypeSegment(
+            label = "Income",
+            selected = selected == Direction.CREDIT,
+            accent = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        ) { onSelect(Direction.CREDIT) }
     }
 }
 
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.ToggleHalf(
+private fun TypeSegment(
     label: String,
     selected: Boolean,
     accent: Color,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val bg = if (selected) accent.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surface
+    val borderColor = if (selected) accent else MaterialTheme.colorScheme.outline
+    val textColor = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant
     Box(
-        modifier = Modifier
-            .weight(1f)
-            .clip(RoundedCornerShape(9.dp))
-            .background(if (selected) MaterialTheme.colorScheme.surface else Color.Transparent)
+        modifier = modifier
+            .clip(FieldShape)
+            .background(bg)
+            .border(if (selected) 1.5.dp else 1.dp, borderColor, FieldShape)
             .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
+            .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            color = textColor,
         )
     }
 }
@@ -237,25 +252,17 @@ private fun CategoryField(categoryId: String, onPick: (String) -> Unit) {
         runCatching { Color(android.graphics.Color.parseColor(info.colorHex)) }.getOrDefault(Color.Gray)
     }
     Box {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
-                .clickable { expanded = true }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        FieldContainer(onClick = { expanded = true }) {
             Box(
-                modifier = Modifier.size(24.dp).clip(CircleShape).background(dotColor.copy(alpha = 0.2f)),
+                modifier = Modifier.size(28.dp).clip(CircleShape).background(dotColor.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center,
             ) { Text(info.emoji, style = MaterialTheme.typography.bodyMedium) }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("Category", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(info.name, style = MaterialTheme.typography.bodyMedium)
+                Text(info.name, style = MaterialTheme.typography.bodyLarge)
             }
-            Text("▾", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("▾", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             CategoryCatalog.selectable.forEach { cat ->
@@ -278,23 +285,41 @@ private fun CategoryField(categoryId: String, onPick: (String) -> Unit) {
 }
 
 @Composable
-private fun FieldRow(label: String, value: String, onClick: () -> Unit) {
+private fun PickerRow(label: String, value: String, onClick: () -> Unit) {
+    FieldContainer(onClick = onClick) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyLarge)
+        }
+        Text("▾", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** A tappable row styled to match the filled text fields, so the whole form reads as one set. */
+@Composable
+private fun FieldContainer(onClick: () -> Unit, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
+            .clip(FieldShape)
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outline, FieldShape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.bodyMedium)
-        }
-        Text("▾", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
+        content = content,
+    )
 }
+
+@Composable
+private fun khaataFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = MaterialTheme.colorScheme.surface,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    cursorColor = MaterialTheme.colorScheme.primary,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -50,13 +50,25 @@ class AddEditTransactionViewModel @Inject constructor(
     val form: StateFlow<EditorFormState> = _form.asStateFlow()
 
     private var existing: Transaction? = null
-    private var loaded = false
+    private var loadedFor: String? = null
 
-    /** Loads the row for [txnId] (edit) or leaves blank defaults (new). Runs once. */
+    /**
+     * Populates the form for [txnId] (edit) or resets to blank defaults (new). This VM is
+     * Activity-scoped, so the *same* instance is reused across editor sessions — every call
+     * must fully (re)set state, never assume a fresh instance. Re-keyed by [txnId] so the
+     * caller can reopen the editor for a different target and get the right content.
+     */
     fun load(txnId: String?) {
-        if (loaded) return
-        loaded = true
-        if (txnId == null) return
+        if (loadedFor == txnId && (txnId == null || existing?.id == txnId)) return
+        loadedFor = txnId
+        if (txnId == null) {
+            existing = null
+            _form.value = EditorFormState() // fresh blank entry
+            return
+        }
+        // Show a clean edit placeholder immediately so no stale data flashes while we fetch.
+        existing = null
+        _form.value = EditorFormState(isEdit = true, canDelete = true)
         viewModelScope.launch {
             val t = repository.getById(txnId) ?: return@launch
             existing = t
@@ -74,10 +86,15 @@ class AddEditTransactionViewModel @Inject constructor(
     }
 
     fun onAmountChange(value: String) {
-        // Allow only digits and a single decimal point.
+        // Digits with at most one decimal point and two fractional digits (paise).
         val filtered = value.filter { it.isDigit() || it == '.' }
-        val normalized = filtered.indexOf('.').let { dot ->
-            if (dot < 0) filtered else filtered.substring(0, dot + 1) + filtered.substring(dot + 1).replace(".", "")
+        val dot = filtered.indexOf('.')
+        val normalized = if (dot < 0) {
+            filtered
+        } else {
+            val whole = filtered.substring(0, dot)
+            val frac = filtered.substring(dot + 1).replace(".", "").take(2)
+            "$whole.$frac"
         }
         _form.update { it.copy(amountInput = normalized, error = null) }
     }

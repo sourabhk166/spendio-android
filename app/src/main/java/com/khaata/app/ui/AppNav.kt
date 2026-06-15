@@ -1,5 +1,6 @@
 package com.khaata.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -51,6 +52,9 @@ fun AppNav(
         )
         return
     }
+
+    // From a non-Home tab, system back returns to Home instead of exiting the app.
+    BackHandler(enabled = screen != Screen.HOME) { screen = Screen.HOME }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
