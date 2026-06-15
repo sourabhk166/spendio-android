@@ -2,6 +2,7 @@ package com.khaata.app.ui.review
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,7 @@ import com.khaata.app.ui.TransactionUi
 
 @Composable
 fun ReviewScreen(
+    onEditTransaction: (String) -> Unit,
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
@@ -101,6 +103,7 @@ fun ReviewScreen(
                     item = item,
                     onApprove = { viewModel.approve(item) },
                     onPickCategory = { categoryId -> viewModel.recategorize(item, categoryId) },
+                    onEdit = { onEditTransaction(item.id) },
                 )
             }
         }
@@ -112,6 +115,7 @@ private fun ReviewCard(
     item: TransactionUi,
     onApprove: () -> Unit,
     onPickCategory: (String) -> Unit,
+    onEdit: () -> Unit,
 ) {
     val catInfo = remember(item.categoryId) { CategoryCatalog.info(item.categoryId) }
     val amountColor = if (item.direction == Direction.DEBIT) MaterialTheme.colorScheme.error
@@ -119,7 +123,7 @@ private fun ReviewCard(
     val sign = if (item.direction == Direction.DEBIT) "−" else "+"
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline),

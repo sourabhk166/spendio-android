@@ -99,6 +99,7 @@ private class FakeTransactionRepository : TransactionRepository {
     override fun observeNeedsReviewCount(): Flow<Int> = flowOf(0)
     override suspend fun approveReview(id: String) = Unit
     override suspend fun recategorize(id: String, categoryId: String) = Unit
+    override suspend fun getById(id: String): Transaction? = inserted.firstOrNull { it.id == id }
     override suspend fun update(txn: Transaction) = Unit
     override suspend fun delete(txn: Transaction) = Unit
     override suspend fun count(): Int = inserted.size

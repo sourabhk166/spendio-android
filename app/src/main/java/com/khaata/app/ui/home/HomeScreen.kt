@@ -54,6 +54,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     onOpenReview: () -> Unit,
+    onEditTransaction: (String) -> Unit,
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -106,7 +107,9 @@ fun HomeScreen(
                 )
             }
         } else {
-            items(state.recent, key = { it.id }) { txn -> TransactionRow(txn) }
+            items(state.recent, key = { it.id }) { txn ->
+                TransactionRow(txn, onClick = { onEditTransaction(txn.id) })
+            }
         }
     }
 }
@@ -252,7 +255,7 @@ private fun CategoryBarRow(slice: CategorySlice, barColor: Color) {
 }
 
 @Composable
-private fun TransactionRow(txn: TransactionUi) {
+private fun TransactionRow(txn: TransactionUi, onClick: () -> Unit) {
     val catInfo = remember(txn.categoryId) { CategoryCatalog.info(txn.categoryId) }
     val catColor = remember(catInfo.colorHex) { catInfo.colorHex.toColor() }
     val amountColor = if (txn.direction == Direction.DEBIT) MaterialTheme.colorScheme.error
@@ -260,7 +263,7 @@ private fun TransactionRow(txn: TransactionUi) {
     val sign = if (txn.direction == Direction.DEBIT) "−" else "+"
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline),

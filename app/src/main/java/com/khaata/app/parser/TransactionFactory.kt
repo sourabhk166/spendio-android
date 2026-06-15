@@ -1,10 +1,13 @@
 package com.khaata.app.parser
 
 import com.khaata.app.domain.model.Categories
+import com.khaata.app.domain.model.Direction
+import com.khaata.app.domain.model.Money
 import com.khaata.app.domain.model.ParseResult
 import com.khaata.app.domain.model.ParseTier
 import com.khaata.app.domain.model.Transaction
 import com.khaata.app.domain.model.TxnSource
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -41,6 +44,42 @@ object TransactionFactory {
             sourcePackage = sourcePackage,
             dedupeKey = Deduplicator.keyFor(result),
             rawTextHash = rawText?.sha256(),
+        )
+    }
+
+    /**
+     * Builds a user-entered transaction. Manual entries are always high-confidence and never
+     * need review. Their dedupe key is derived from the unique id (never from amount/time), so
+     * a manual entry can never collide with a captured one — a user may legitimately log a cash
+     * spend identical to a card spend.
+     */
+    fun manual(
+        amount: Money,
+        direction: Direction,
+        merchant: String,
+        categoryId: String,
+        occurredAt: Instant,
+        note: String?,
+        idProvider: () -> String = { UUID.randomUUID().toString() },
+    ): Transaction {
+        val id = idProvider()
+        return Transaction(
+            id = id,
+            amount = amount,
+            direction = direction,
+            occurredAt = occurredAt,
+            accountId = null,
+            rawMerchant = merchant,
+            merchant = merchant,
+            categoryId = categoryId,
+            note = note,
+            source = TxnSource.MANUAL,
+            parseTier = ParseTier.MANUAL,
+            confidence = 1f,
+            needsReview = false,
+            sourcePackage = null,
+            dedupeKey = "manual:$id",
+            rawTextHash = null,
         )
     }
 }

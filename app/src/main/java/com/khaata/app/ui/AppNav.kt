@@ -1,12 +1,13 @@
 package com.khaata.app.ui
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -20,11 +21,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.khaata.app.ui.editor.AddEditTransactionScreen
 import com.khaata.app.ui.home.HomeScreen
 import com.khaata.app.ui.review.ReviewScreen
 import com.khaata.app.ui.settings.SettingsScreen
 
 private enum class Screen { HOME, REVIEW, SETTINGS }
+
+/** A full-screen add/edit overlay above the tabbed scaffold. */
+private sealed interface EditorTarget {
+    data object New : EditorTarget
+    data class Edit(val id: String) : EditorTarget
+}
 
 @Composable
 fun AppNav(
@@ -32,10 +40,31 @@ fun AppNav(
     viewModel: AppNavViewModel = hiltViewModel(),
 ) {
     var screen by remember { mutableStateOf(Screen.HOME) }
+    var editor by remember { mutableStateOf<EditorTarget?>(null) }
     val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
+
+    val current = editor
+    if (current != null) {
+        AddEditTransactionScreen(
+            txnId = (current as? EditorTarget.Edit)?.id,
+            onClose = { editor = null },
+        )
+        return
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        floatingActionButton = {
+            if (screen == Screen.HOME) {
+                FloatingActionButton(
+                    onClick = { editor = EditorTarget.New },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = "Add transaction")
+                }
+            }
+        },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 NavigationBarItem(
@@ -68,9 +97,13 @@ fun AppNav(
         when (screen) {
             Screen.HOME -> HomeScreen(
                 onOpenReview = { screen = Screen.REVIEW },
+                onEditTransaction = { id -> editor = EditorTarget.Edit(id) },
                 contentPadding = innerPadding,
             )
-            Screen.REVIEW -> ReviewScreen(contentPadding = innerPadding)
+            Screen.REVIEW -> ReviewScreen(
+                onEditTransaction = { id -> editor = EditorTarget.Edit(id) },
+                contentPadding = innerPadding,
+            )
             Screen.SETTINGS -> SettingsScreen(contentPadding = innerPadding)
         }
     }

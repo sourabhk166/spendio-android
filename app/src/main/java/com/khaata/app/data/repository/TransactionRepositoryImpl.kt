@@ -57,6 +57,8 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun recategorize(id: String, categoryId: String) = dao.recategorize(id, categoryId)
 
+    override suspend fun getById(id: String): Transaction? = dao.getById(id)?.toDomain()
+
     override suspend fun update(txn: Transaction) = dao.update(txn.toEntity())
 
     override suspend fun delete(txn: Transaction) = dao.delete(txn.toEntity())
