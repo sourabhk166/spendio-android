@@ -76,6 +76,8 @@ dependencies {
     implementation(libs.sqlcipher)
     implementation(libs.androidx.sqlite)
 
+    implementation(libs.androidx.material.icons.extended)
+
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
