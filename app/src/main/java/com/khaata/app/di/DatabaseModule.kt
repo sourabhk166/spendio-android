@@ -13,8 +13,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import javax.inject.Singleton
 
 @Module
@@ -27,9 +26,10 @@ object DatabaseModule {
         @ApplicationContext context: Context,
         databaseKey: DatabaseKey,
     ): KhaataDatabase {
-        SQLiteDatabase.loadLibs(context)
+        // sqlcipher-android (4.6+) auto-loads its native libs via System.loadLibrary,
+        // so the old SQLiteDatabase.loadLibs(context) bootstrap is no longer needed.
         deleteLegacyPlainDatabase(context)
-        val factory = SupportFactory(databaseKey.getOrCreatePassphrase())
+        val factory = SupportOpenHelperFactory(databaseKey.getOrCreatePassphrase())
         return Room.databaseBuilder(context, KhaataDatabase::class.java, KhaataDatabase.NAME)
             .openHelperFactory(factory)
             // Pre-ship only: throwaway dogfood data. Replaced by a real Migration before release.
