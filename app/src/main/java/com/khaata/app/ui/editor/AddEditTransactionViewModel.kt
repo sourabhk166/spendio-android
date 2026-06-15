@@ -99,7 +99,16 @@ class AddEditTransactionViewModel @Inject constructor(
         _form.update { it.copy(amountInput = normalized, error = null) }
     }
 
-    fun onDirectionChange(direction: Direction) = _form.update { it.copy(direction = direction, error = null) }
+    fun onDirectionChange(direction: Direction) = _form.update { state ->
+        // Keep the category meaningful for the chosen direction: income defaults to the
+        // Income category; flipping back to an expense clears the Income tag.
+        val category = when {
+            direction == Direction.CREDIT && state.categoryId != Categories.INCOME -> Categories.INCOME
+            direction == Direction.DEBIT && state.categoryId == Categories.INCOME -> Categories.UNCATEGORIZED
+            else -> state.categoryId
+        }
+        state.copy(direction = direction, categoryId = category, error = null)
+    }
     fun onMerchantChange(value: String) = _form.update { it.copy(merchant = value, error = null) }
     fun onCategoryChange(categoryId: String) = _form.update { it.copy(categoryId = categoryId) }
     fun onDateChange(instant: Instant) = _form.update { it.copy(occurredAt = instant) }

@@ -58,6 +58,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.khaata.app.domain.model.Categories
 import com.khaata.app.domain.model.CategoryCatalog
 import com.khaata.app.domain.model.Direction
 import java.time.Instant
@@ -146,7 +147,11 @@ fun AddEditTransactionScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            CategoryField(categoryId = form.categoryId, onPick = viewModel::onCategoryChange)
+            CategoryField(
+                categoryId = form.categoryId,
+                direction = form.direction,
+                onPick = viewModel::onCategoryChange,
+            )
 
             PickerRow(label = "Date", value = form.occurredAt.formatDate(), onClick = { showDatePicker = true })
 
@@ -245,11 +250,19 @@ private fun TypeSegment(
 }
 
 @Composable
-private fun CategoryField(categoryId: String, onPick: (String) -> Unit) {
+private fun CategoryField(categoryId: String, direction: Direction, onPick: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val info = remember(categoryId) { CategoryCatalog.info(categoryId) }
     val dotColor = remember(info.colorHex) {
         runCatching { Color(android.graphics.Color.parseColor(info.colorHex)) }.getOrDefault(Color.Gray)
+    }
+    // Show direction-appropriate options: income gets Income/Other; expenses get the
+    // spending categories (Income makes no sense for a debit).
+    val options = remember(direction) {
+        when (direction) {
+            Direction.CREDIT -> CategoryCatalog.selectable.filter { it.id == Categories.INCOME || it.id == Categories.OTHER }
+            Direction.DEBIT -> CategoryCatalog.selectable.filter { it.id != Categories.INCOME }
+        }
     }
     Box {
         FieldContainer(onClick = { expanded = true }) {
@@ -265,7 +278,7 @@ private fun CategoryField(categoryId: String, onPick: (String) -> Unit) {
             Text("▾", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            CategoryCatalog.selectable.forEach { cat ->
+            options.forEach { cat ->
                 DropdownMenuItem(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
