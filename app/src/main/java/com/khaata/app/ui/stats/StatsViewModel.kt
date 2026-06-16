@@ -2,6 +2,7 @@ package com.khaata.app.ui.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.khaata.app.data.prefs.BudgetStore
 import com.khaata.app.domain.model.CategorySlice
 import com.khaata.app.domain.model.Money
 import com.khaata.app.domain.repository.TransactionRepository
@@ -12,7 +13,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.YearMonth
 import javax.inject.Inject
@@ -24,6 +24,8 @@ data class StatsUiState(
     val mode: StatsMode,
     val slices: List<CategorySlice>,
     val total: Money,
+    /** categoryId -> monthly limit (paise); only populated in EXPENSE mode. */
+    val budgets: Map<String, Long> = emptyMap(),
 ) {
     companion object {
         fun empty(month: YearMonth) = StatsUiState(month, StatsMode.EXPENSE, emptyList(), Money.ZERO)
@@ -34,6 +36,7 @@ data class StatsUiState(
 @HiltViewModel
 class StatsViewModel @Inject constructor(
     private val repository: TransactionRepository,
+    private val budgetStore: BudgetStore,
 ) : ViewModel() {
 
     private val month = MutableStateFlow(YearMonth.now())
@@ -46,12 +49,13 @@ class StatsViewModel @Inject constructor(
                     StatsMode.EXPENSE -> repository.observeCategoryBreakdown(m)
                     StatsMode.INCOME -> repository.observeIncomeBreakdown(m)
                 }
-                breakdown.map { slices ->
+                combine(breakdown, budgetStore.budgets) { slices, budgets ->
                     StatsUiState(
                         month = m,
                         mode = md,
                         slices = slices,
                         total = Money(slices.sumOf { it.amount.minorUnits }),
+                        budgets = if (md == StatsMode.EXPENSE) budgets else emptyMap(),
                     )
                 }
             }

@@ -76,6 +76,10 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getById(id: String): TransactionEntity?
 
+    /** All transactions, newest first — used for CSV export. */
+    @Query("SELECT * FROM transactions ORDER BY occurredAt DESC")
+    suspend fun getAll(): List<TransactionEntity>
+
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun count(): Int
 

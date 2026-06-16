@@ -1,7 +1,12 @@
 package com.khaata.app.ui.settings
 
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
+import androidx.core.content.FileProvider
 import com.khaata.app.BuildConfig
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,12 +42,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun SettingsScreen(
+    onOpenBudgets: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val appLock by viewModel.appLockEnabled.collectAsStateWithLifecycle()
     val sources by viewModel.sources.collectAsStateWithLifecycle()
     var confirmWipe by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
         modifier = Modifier
@@ -90,6 +97,29 @@ fun SettingsScreen(
                     )
                 }
             }
+        }
+
+        // Data card
+        SectionCard(title = "Data") {
+            ClickableRow(
+                title = "Monthly budgets",
+                subtitle = "Set spending limits per category",
+                onClick = onOpenBudgets,
+            )
+            HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
+            ClickableRow(
+                title = "Export to CSV",
+                subtitle = "Share all transactions as a spreadsheet",
+                onClick = {
+                    viewModel.exportCsv { csv ->
+                        if (csv == null) {
+                            Toast.makeText(context, "Nothing to export yet", Toast.LENGTH_SHORT).show()
+                        } else {
+                            shareCsv(context, csv)
+                        }
+                    }
+                },
+            )
         }
 
         // About card
@@ -169,6 +199,36 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
             content()
         }
     }
+}
+
+@Composable
+private fun ClickableRow(title: String, subtitle: String? = null, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium)
+            if (subtitle != null) {
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+private fun shareCsv(context: Context, csv: String) {
+    val dir = java.io.File(context.cacheDir, "exports").apply { mkdirs() }
+    val file = java.io.File(dir, "khaata-export.csv")
+    file.writeText(csv)
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/csv"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, "Export transactions"))
 }
 
 @Composable

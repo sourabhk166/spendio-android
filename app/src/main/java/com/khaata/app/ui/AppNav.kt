@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.khaata.app.ui.budgets.BudgetsScreen
 import com.khaata.app.ui.editor.AddEditTransactionScreen
 import com.khaata.app.ui.home.HomeScreen
 import com.khaata.app.ui.review.ReviewScreen
@@ -46,6 +47,7 @@ fun AppNav(
     var screen by remember { mutableStateOf(Screen.HOME) }
     var editor by remember { mutableStateOf<EditorTarget?>(null) }
     var searching by remember { mutableStateOf(false) }
+    var budgeting by remember { mutableStateOf(false) }
     val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
 
     val current = editor
@@ -62,6 +64,11 @@ fun AppNav(
             onClose = { searching = false },
             onEditTransaction = { id -> searching = false; editor = EditorTarget.Edit(id) },
         )
+        return
+    }
+
+    if (budgeting) {
+        BudgetsScreen(onClose = { budgeting = false })
         return
     }
 
@@ -128,7 +135,10 @@ fun AppNav(
                 onEditTransaction = { id -> editor = EditorTarget.Edit(id) },
                 contentPadding = innerPadding,
             )
-            Screen.SETTINGS -> SettingsScreen(contentPadding = innerPadding)
+            Screen.SETTINGS -> SettingsScreen(
+                onOpenBudgets = { budgeting = true },
+                contentPadding = innerPadding,
+            )
         }
     }
 }

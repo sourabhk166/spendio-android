@@ -77,6 +77,8 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun getById(id: String): Transaction? = dao.getById(id)?.toDomain()
 
+    override suspend fun allTransactions(): List<Transaction> = dao.getAll().map { it.toDomain() }
+
     override suspend fun update(txn: Transaction) = dao.update(txn.toEntity())
 
     override suspend fun delete(txn: Transaction) = dao.delete(txn.toEntity())

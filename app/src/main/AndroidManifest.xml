@@ -26,6 +26,17 @@
             </intent-filter>
         </activity>
 
+        <!-- Shares the exported CSV from cache via a content:// URI (no external storage perms). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!--
           Notification listener. The system binds this only after the user grants
           "Notification access" in settings; the signature-level BIND permission keeps

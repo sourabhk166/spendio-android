@@ -99,7 +99,7 @@ fun StatsScreen(
                 )
             }
             items(state.slices, key = { it.categoryId }) { slice ->
-                CategoryRow(slice)
+                CategoryRow(slice, budgetMinor = state.budgets[slice.categoryId])
             }
         }
     }
@@ -203,7 +203,7 @@ private fun DonutCard(slices: List<CategorySlice>, total: Money, caption: String
 }
 
 @Composable
-private fun CategoryRow(slice: CategorySlice) {
+private fun CategoryRow(slice: CategorySlice, budgetMinor: Long?) {
     val color = remember(slice.colorHex) { slice.colorHex.toColor() }
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -211,24 +211,52 @@ private fun CategoryRow(slice: CategorySlice) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier.size(34.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center,
-            ) { Text(slice.emoji, style = MaterialTheme.typography.bodyMedium) }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(slice.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier.size(34.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center,
+                ) { Text(slice.emoji, style = MaterialTheme.typography.bodyMedium) }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(slice.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                    Text(
+                        text = "${(slice.fraction * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(slice.amount.format(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            }
+
+            if (budgetMinor != null && budgetMinor > 0) {
+                val ratio = (slice.amount.minorUnits.toFloat() / budgetMinor).coerceIn(0f, 1f)
+                val over = slice.amount.minorUnits > budgetMinor
+                val barColor = if (over) MaterialTheme.colorScheme.error else color
+                Spacer(Modifier.height(8.dp))
+                Box(
+                    Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Box(
+                        Modifier.fillMaxWidth(ratio).height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)).background(barColor),
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "${(slice.fraction * 100).toInt()}%",
+                    text = if (over) {
+                        "Over budget · ${slice.amount.format()} of ${Money(budgetMinor).format()}"
+                    } else {
+                        "${slice.amount.format()} of ${Money(budgetMinor).format()}"
+                    },
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(slice.amount.format(), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         }
     }
 }

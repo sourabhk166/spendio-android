@@ -38,6 +38,9 @@ interface TransactionRepository {
     /** One transaction by id, or null — used to populate the edit form. */
     suspend fun getById(id: String): Transaction?
 
+    /** Every transaction, newest first — used for CSV export. */
+    suspend fun allTransactions(): List<Transaction>
+
     suspend fun update(txn: Transaction)
 
     suspend fun delete(txn: Transaction)
