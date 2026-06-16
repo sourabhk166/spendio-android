@@ -44,7 +44,9 @@ class HomeViewModel @Inject constructor(
             combine(
                 repository.observeMonthlyTotals(m),
                 repository.observeCategoryBreakdown(m),
-                repository.observeRecent(limit = 50),
+                // Show the selected month's transactions, so the list stays consistent with the
+                // month navigation and the totals above it (was: latest 50 across all months).
+                repository.observeMonth(m),
                 repository.observeNeedsReviewCount(),
             ) { totals, breakdown, recent, reviewCount ->
                 HomeUiState(

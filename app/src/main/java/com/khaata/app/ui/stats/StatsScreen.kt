@@ -216,15 +216,15 @@ private fun CategoryRow(slice: CategorySlice, budgetMinor: Long?) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    modifier = Modifier.size(34.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
-                    contentAlignment = Alignment.Center,
-                ) { Text(slice.emoji, style = MaterialTheme.typography.bodyMedium) }
-                Spacer(Modifier.width(12.dp))
+                // Solid color swatch — the legend that maps this row to its slice in the donut.
+                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(color))
+                Spacer(Modifier.width(10.dp))
+                Text(slice.emoji, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                     Text(slice.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                     Text(
-                        text = "${(slice.fraction * 100).toInt()}%",
+                        text = "${slice.percent}%",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -22,6 +22,20 @@ class InsightsTest {
         assertEquals("Food & Dining", slices[0].name)
     }
 
+    @Test fun `percentages always sum to exactly 100`() {
+        // The classic truncation trap: 1/3 + 1/3 + 1/3 naively floors to 33+33+33 = 99.
+        val thirds = Insights.slices(
+            mapOf(Categories.FOOD to 100L, Categories.TRANSPORT to 100L, Categories.SHOPPING to 100L),
+        )
+        assertEquals(100, thirds.sumOf { it.percent })
+
+        // The reported case: 283 + 50 + 1 of 334 would truncate to 84 + 14 + 0 = 98.
+        val reported = Insights.slices(
+            mapOf(Categories.FOOD to 28300L, Categories.TRANSPORT to 5000L, Categories.UNCATEGORIZED to 100L),
+        )
+        assertEquals(100, reported.sumOf { it.percent })
+    }
+
     @Test fun `zero and negative totals are excluded`() {
         val slices = Insights.slices(mapOf(Categories.FOOD to 100L, Categories.SHOPPING to 0L))
         assertEquals(1, slices.size)

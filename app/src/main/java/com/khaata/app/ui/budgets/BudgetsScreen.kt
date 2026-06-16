@@ -1,10 +1,12 @@
 package com.khaata.app.ui.budgets
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,16 +29,19 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -53,6 +58,7 @@ fun BudgetsScreen(
     viewModel: BudgetsViewModel = hiltViewModel(),
 ) {
     val budgets by viewModel.budgets.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     BackHandler { onClose() }
 
@@ -61,6 +67,13 @@ fun BudgetsScreen(
         CategoryCatalog.selectable.filter {
             it.id != Categories.INCOME && it.id !in Categories.NON_EXPENSE
         }
+    }
+
+    // Local edit buffer (whole rupees). Nothing is persisted until the user taps Save. We merge
+    // in stored values as they load without clobbering anything the user has already typed.
+    val edited = remember { mutableStateMapOf<String, String>() }
+    LaunchedEffect(budgets) {
+        budgets.forEach { (id, paise) -> if (id !in edited) edited[id] = (paise / 100).toString() }
     }
 
     Scaffold(
@@ -73,6 +86,15 @@ fun BudgetsScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    TextButton(onClick = {
+                        categories.forEach { viewModel.setBudget(it.id, edited[it.id] ?: "") }
+                        Toast.makeText(context, "Budgets saved", Toast.LENGTH_SHORT).show()
+                        onClose()
+                    }) {
+                        Text("Save", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
@@ -82,12 +104,12 @@ fun BudgetsScreen(
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
                 Text(
-                    text = "Set a monthly spending limit per category. Progress shows on the Stats tab; leave blank for no limit.",
+                    text = "Set a monthly spending limit per category, then tap Save. Progress shows on the Stats tab; leave blank for no limit.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp),
@@ -96,8 +118,8 @@ fun BudgetsScreen(
             items(categories, key = { it.id }) { cat ->
                 BudgetRow(
                     cat = cat,
-                    current = budgets[cat.id],
-                    onChange = { viewModel.setBudget(cat.id, it) },
+                    value = edited[cat.id] ?: "",
+                    onValueChange = { edited[cat.id] = it.filter { c -> c.isDigit() }.take(7) },
                 )
             }
         }
@@ -105,23 +127,10 @@ fun BudgetsScreen(
 }
 
 @Composable
-private fun BudgetRow(cat: CategoryInfo, current: Long?, onChange: (String) -> Unit) {
+private fun BudgetRow(cat: CategoryInfo, value: String, onValueChange: (String) -> Unit) {
     val color = remember(cat.colorHex) {
         runCatching { Color(android.graphics.Color.parseColor(cat.colorHex)) }.getOrDefault(Color.Gray)
     }
-    // Seed the field from the stored value once it loads (DataStore emits asynchronously),
-    // but stop reseeding the moment the user starts editing so our own writes never clobber
-    // in-progress typing. Whole rupees only, for a clean limit.
-    var text by androidx.compose.runtime.saveable.rememberSaveable(cat.id) {
-        androidx.compose.runtime.mutableStateOf("")
-    }
-    var touched by androidx.compose.runtime.saveable.rememberSaveable(cat.id) {
-        androidx.compose.runtime.mutableStateOf(false)
-    }
-    androidx.compose.runtime.LaunchedEffect(current) {
-        if (!touched) text = current?.let { (it / 100).toString() } ?: ""
-    }
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -133,13 +142,8 @@ private fun BudgetRow(cat: CategoryInfo, current: Long?, onChange: (String) -> U
         Spacer(Modifier.width(12.dp))
         Text(cat.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         OutlinedTextField(
-            value = text,
-            onValueChange = { raw ->
-                val digits = raw.filter { it.isDigit() }.take(7)
-                touched = true
-                text = digits
-                onChange(digits)
-            },
+            value = value,
+            onValueChange = onValueChange,
             prefix = { Text("₹") },
             placeholder = { Text("—") },
             singleLine = true,

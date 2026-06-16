@@ -28,6 +28,7 @@ import com.khaata.app.ui.editor.AddEditTransactionScreen
 import com.khaata.app.ui.home.HomeScreen
 import com.khaata.app.ui.review.ReviewScreen
 import com.khaata.app.ui.search.SearchScreen
+import com.khaata.app.ui.settings.NotificationSourcesScreen
 import com.khaata.app.ui.settings.SettingsScreen
 import com.khaata.app.ui.stats.StatsScreen
 
@@ -48,6 +49,7 @@ fun AppNav(
     var editor by remember { mutableStateOf<EditorTarget?>(null) }
     var searching by remember { mutableStateOf(false) }
     var budgeting by remember { mutableStateOf(false) }
+    var managingSources by remember { mutableStateOf(false) }
     val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
 
     val current = editor
@@ -69,6 +71,11 @@ fun AppNav(
 
     if (budgeting) {
         BudgetsScreen(onClose = { budgeting = false })
+        return
+    }
+
+    if (managingSources) {
+        NotificationSourcesScreen(onClose = { managingSources = false })
         return
     }
 
@@ -137,6 +144,7 @@ fun AppNav(
             )
             Screen.SETTINGS -> SettingsScreen(
                 onOpenBudgets = { budgeting = true },
+                onOpenSources = { managingSources = true },
                 contentPadding = innerPadding,
             )
         }

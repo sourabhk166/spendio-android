@@ -140,7 +140,12 @@ fun AddEditTransactionScreen(
                 value = form.merchant,
                 onValueChange = viewModel::onMerchantChange,
                 label = { Text("Description") },
-                placeholder = { Text("e.g. Auto rickshaw, Chai, Rent") },
+                placeholder = {
+                    Text(
+                        if (form.direction == Direction.CREDIT) "e.g. Salary, Refund, Cashback"
+                        else "e.g. Auto rickshaw, Chai, Rent",
+                    )
+                },
                 singleLine = true,
                 shape = FieldShape,
                 colors = khaataFieldColors(),

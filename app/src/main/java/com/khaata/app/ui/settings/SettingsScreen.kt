@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun SettingsScreen(
     onOpenBudgets: () -> Unit = {},
+    onOpenSources: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -80,23 +81,13 @@ fun SettingsScreen(
             }
         }
 
-        // Sources card
+        // Sources card — the full per-app list lives on its own screen to keep Settings tidy.
         SectionCard(title = "Notification sources") {
-            Text(
-                text = "Turn off any app you don't want Khaata to read notifications from.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp),
+            ClickableRow(
+                title = "Manage sources",
+                subtitle = "${sources.count { it.enabled }} of ${sources.size} apps on",
+                onClick = onOpenSources,
             )
-            sources.forEachIndexed { index, source ->
-                if (index > 0) HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
-                SettingRow(title = source.displayName) {
-                    Switch(
-                        checked = source.enabled,
-                        onCheckedChange = { viewModel.toggleSource(source.packageName, it) },
-                    )
-                }
-            }
         }
 
         // Data card
