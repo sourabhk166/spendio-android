@@ -24,10 +24,14 @@ class TxnNotificationListenerService : NotificationListenerService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
-        val raw = sbn?.toRawNotification() ?: return
+        val raws = sbn?.toRawNotifications().orEmpty()
+        if (raws.isEmpty()) return
         scope.launch {
-            runCatching { pipeline.process(raw) }
-                .onFailure { Log.w(TAG, "Capture failed for ${raw.packageName}", it) }
+            // A messaging notification can carry several unread bank alerts; process each.
+            raws.forEach { raw ->
+                runCatching { pipeline.process(raw) }
+                    .onFailure { Log.w(TAG, "Capture failed for ${raw.packageName}", it) }
+            }
         }
     }
 

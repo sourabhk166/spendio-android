@@ -135,10 +135,28 @@ object MerchantKeywords {
         "recharge" to Categories.BILLS,
         "jio" to Categories.BILLS,
 
-        // ── Income ──────────────────────────────────────────────────────────────────
-        "salary" to Categories.INCOME,
-        "interest credited" to Categories.INCOME,
-        "dividend" to Categories.INCOME,
+        // ── Investments ─────────────────────────────────────────────────────────────
+        "zerodha" to Categories.INVESTMENTS,
+        "groww" to Categories.INVESTMENTS,
+        "indmoney" to Categories.INVESTMENTS,
+        "ind money" to Categories.INVESTMENTS,
+        "angelone" to Categories.INVESTMENTS,
+        "angel one" to Categories.INVESTMENTS,
+        "upstox" to Categories.INVESTMENTS,
+        "paytm money" to Categories.INVESTMENTS,
+        "smallcase" to Categories.INVESTMENTS,
+        "wealthdesk" to Categories.INVESTMENTS,
+        "sip" to Categories.INVESTMENTS,
+        "mutual fund" to Categories.INVESTMENTS,
+
+        // ── Income (specific sub-types before generic) ───────────────────────────────
+        "interest credited" to Categories.INCOME_INTEREST,
+        "interest earned" to Categories.INCOME_INTEREST,
+        "dividend" to Categories.INCOME_INTEREST,
+        "cashback" to Categories.INCOME_CASHBACK,
+        "cash back" to Categories.INCOME_CASHBACK,
+        "refund" to Categories.INCOME_REFUND,
+        "salary" to Categories.INCOME_SALARY,
     )
 
     /**

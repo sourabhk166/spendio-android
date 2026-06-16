@@ -22,10 +22,12 @@ object TransactionFactory {
         sourcePackage: String,
         rawText: String?,
         categoryId: String = Categories.UNCATEGORIZED,
+        forceReview: Boolean = false,
         idProvider: () -> String = { UUID.randomUUID().toString() },
     ): Transaction {
         require(result.isComplete) { "Cannot build a Transaction from an incomplete ParseResult" }
-        val needsReview = result.tier == ParseTier.TIER3_HEURISTIC ||
+        val needsReview = forceReview ||
+            result.tier == ParseTier.TIER3_HEURISTIC ||
             result.confidence < TieredTransactionParser.HIGH_CONFIDENCE
         return Transaction(
             id = idProvider(),

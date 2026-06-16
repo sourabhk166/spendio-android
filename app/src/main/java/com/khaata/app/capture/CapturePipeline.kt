@@ -52,8 +52,14 @@ class CapturePipeline @Inject constructor(
 
         if (parsed == null || !parsed.isComplete) return CaptureOutcome.NotParsed
 
-        val categoryId = categorizer.categorize(parsed.rawMerchant)
-        val txn = TransactionFactory.fromParse(parsed, raw.packageName, raw.text, categoryId)
+        val categorization = categorizer.categorize(parsed.rawMerchant)
+        val txn = TransactionFactory.fromParse(
+            result = parsed,
+            sourcePackage = raw.packageName,
+            rawText = raw.text,
+            categoryId = categorization.categoryId,
+            forceReview = categorization.needsReview,
+        )
         return if (repository.insertIfNew(txn)) CaptureOutcome.Saved(txn) else CaptureOutcome.Duplicate
     }
 }

@@ -1,5 +1,6 @@
 package com.khaata.app.ui.settings
 
+import com.khaata.app.BuildConfig
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -91,9 +92,12 @@ fun SettingsScreen(
             }
         }
 
-        // Storage card
-        SectionCard(title = "Storage") {
-            SettingRow(title = "Encryption", subtitle = "All data is encrypted at rest with SQLCipher") {}
+        // About card
+        SectionCard(title = "About") {
+            SettingRow(
+                title = "Khaata",
+                subtitle = "Version ${BuildConfig.VERSION_NAME}",
+            ) {}
         }
 
         // Danger zone card

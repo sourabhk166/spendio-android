@@ -103,8 +103,8 @@ class AddEditTransactionViewModel @Inject constructor(
         // Keep the category meaningful for the chosen direction: income defaults to the
         // Income category; flipping back to an expense clears the Income tag.
         val category = when {
-            direction == Direction.CREDIT && state.categoryId != Categories.INCOME -> Categories.INCOME
-            direction == Direction.DEBIT && state.categoryId == Categories.INCOME -> Categories.UNCATEGORIZED
+            direction == Direction.CREDIT && state.categoryId !in Categories.INCOME_ALL -> Categories.INCOME
+            direction == Direction.DEBIT && state.categoryId in Categories.INCOME_ALL -> Categories.UNCATEGORIZED
             else -> state.categoryId
         }
         state.copy(direction = direction, categoryId = category, error = null)

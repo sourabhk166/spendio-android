@@ -2,6 +2,7 @@ package com.khaata.app.ui.review
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.khaata.app.domain.model.Categories
 import com.khaata.app.domain.repository.TransactionRepository
 import com.khaata.app.parser.Categorizer
 import com.khaata.app.ui.TransactionUi
@@ -32,6 +33,12 @@ class ReviewViewModel @Inject constructor(
 
     fun approve(item: TransactionUi) = viewModelScope.launch {
         repository.approveReview(item.id)
+        // Approving confirms the assigned category. Remember it so the same payee — e.g. a
+        // friend who repays you regularly, or your own self-transfer account — isn't queued
+        // for review every time. Uncategorized is never worth remembering.
+        if (item.categoryId != Categories.UNCATEGORIZED) {
+            categorizer.correct(item.rawMerchant, item.categoryId)
+        }
     }
 
     fun recategorize(item: TransactionUi, categoryId: String) = viewModelScope.launch {

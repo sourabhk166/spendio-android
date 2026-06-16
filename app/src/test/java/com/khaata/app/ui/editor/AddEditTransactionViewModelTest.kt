@@ -45,6 +45,22 @@ class AddEditTransactionViewModelTest {
         vm.onDirectionChange(Direction.DEBIT)
         assertEquals(Categories.FOOD, vm.form.value.categoryId)
     }
+
+    @Test fun `switching to expense clears an income sub-category`() {
+        val vm = newViewModel()
+        vm.onDirectionChange(Direction.CREDIT)
+        vm.onCategoryChange(Categories.INCOME_SALARY)
+        vm.onDirectionChange(Direction.DEBIT)
+        assertEquals(Categories.UNCATEGORIZED, vm.form.value.categoryId)
+    }
+
+    @Test fun `income sub-category is preserved when direction stays credit`() {
+        val vm = newViewModel()
+        vm.onDirectionChange(Direction.CREDIT)
+        vm.onCategoryChange(Categories.INCOME_FREELANCE)
+        vm.onDirectionChange(Direction.CREDIT)
+        assertEquals(Categories.INCOME_FREELANCE, vm.form.value.categoryId)
+    }
 }
 
 private class NoRuleRepository : RuleRepository {

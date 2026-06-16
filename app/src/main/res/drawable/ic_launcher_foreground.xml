@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Khaata adaptive-icon foreground: a solid white ₹ glyph, built from filled shapes (not thin
+  strokes) so it reads crisply at every launcher size and as the Android-12 splash icon.
+  Drawn inside the inner ~66dp circle so the splash mask never clips it. Safe zone for the
+  adaptive icon is the central 72×72dp of this 108×108dp canvas.
+
+  Glyph = two horizontal bars + a right loop stem + a diagonal leg (the ₹ signature).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,28 H68 V34.5 H38 Z
+                          M38,40 H68 V46.5 H38 Z
+                          M61,28 H68 V46.5 H61 Z
+                          M40,46.5 H48 L66,80 H58 Z" />
+
+</vector>

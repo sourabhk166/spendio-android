@@ -5,7 +5,9 @@ import com.khaata.app.domain.model.Categories
 import com.khaata.app.domain.repository.RuleRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private class MapRuleRepository : RuleRepository {
@@ -34,7 +36,7 @@ class CategorizerTest {
         val rules = MapRuleRepository().apply { map["swiggy"] = Categories.FOOD }
         val ai = FakeAiEngine(category = Categories.SHOPPING)
         val c = Categorizer(rules, ai, MerchantNormalizer())
-        assertEquals(Categories.FOOD, c.categorize("Swiggy"))
+        assertEquals(Categories.FOOD, c.categorize("Swiggy").categoryId)
     }
 
     // "Acme" is deliberately a merchant the keyword dictionary does NOT know, so these
@@ -43,7 +45,7 @@ class CategorizerTest {
     @Test fun `ai prediction is used and cached`() = runTest {
         val rules = MapRuleRepository()
         val c = Categorizer(rules, FakeAiEngine(category = Categories.SHOPPING), MerchantNormalizer())
-        assertEquals(Categories.SHOPPING, c.categorize("Acme"))
+        assertEquals(Categories.SHOPPING, c.categorize("Acme").categoryId)
         assertEquals(Categories.SHOPPING, rules.categoryFor("acme"))
     }
 
@@ -52,34 +54,51 @@ class CategorizerTest {
         val c = Categorizer(rules, FakeAiEngine(category = Categories.SHOPPING), MerchantNormalizer())
         c.categorize("Acme")
         c.correct("Acme", Categories.GROCERIES)
-        assertEquals(Categories.GROCERIES, c.categorize("Acme"))
+        assertEquals(Categories.GROCERIES, c.categorize("Acme").categoryId)
     }
 
     @Test fun `unknown category from ai is ignored`() = runTest {
         val c = Categorizer(MapRuleRepository(), FakeAiEngine(category = "not-a-real-category"), MerchantNormalizer())
-        assertEquals(Categories.UNCATEGORIZED, c.categorize("Acme"))
+        assertEquals(Categories.UNCATEGORIZED, c.categorize("Acme").categoryId)
     }
 
     @Test fun `no merchant and no-op ai stay uncategorized`() = runTest {
         val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
-        assertEquals(Categories.UNCATEGORIZED, c.categorize(null))
-        assertEquals(Categories.UNCATEGORIZED, c.categorize("Some New Merchant"))
+        assertEquals(Categories.UNCATEGORIZED, c.categorize(null).categoryId)
+        // Single-token unknown merchant: no keyword match, no P2P heuristic, no AI → uncategorized.
+        assertEquals(Categories.UNCATEGORIZED, c.categorize("Xyzacme").categoryId)
+    }
+
+    @Test fun `two-word person name is transfers and flagged for review`() = runTest {
+        val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
+        val rahul = c.categorize("RAHUL SHARMA")
+        assertEquals(Categories.TRANSFERS, rahul.categoryId)
+        assertTrue("P2P person transfers must be surfaced for review", rahul.needsReview)
+        assertEquals(Categories.TRANSFERS, c.categorize("Karan Malhotra").categoryId)
+    }
+
+    @Test fun `known brand two-word name is not mistaken for a person`() = runTest {
+        val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
+        // "Jio Recharge" — "jio" keyword hits before the P2P heuristic, and is not reviewed.
+        val jio = c.categorize("Jio Recharge")
+        assertEquals(Categories.BILLS, jio.categoryId)
+        assertFalse(jio.needsReview)
     }
 
     @Test fun `keyword dictionary categorizes known merchants without ai`() = runTest {
         // NoOp AI = the common case on non-Pixel devices. The keyword tier must still work.
         val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
-        assertEquals(Categories.FOOD, c.categorize("EATCLUB"))
-        assertEquals(Categories.FOOD, c.categorize("Swiggy"))
-        assertEquals(Categories.TRANSPORT, c.categorize("UBER India"))
-        assertEquals(Categories.SHOPPING, c.categorize("AMAZON"))
-        assertEquals(Categories.GROCERIES, c.categorize("Blinkit"))
+        assertEquals(Categories.FOOD, c.categorize("EATCLUB").categoryId)
+        assertEquals(Categories.FOOD, c.categorize("Swiggy").categoryId)
+        assertEquals(Categories.TRANSPORT, c.categorize("UBER India").categoryId)
+        assertEquals(Categories.SHOPPING, c.categorize("AMAZON").categoryId)
+        assertEquals(Categories.GROCERIES, c.categorize("Blinkit").categoryId)
     }
 
     @Test fun `keyword tier does not persist a guess as a rule`() = runTest {
         val rules = MapRuleRepository()
         val c = Categorizer(rules, NoOpAiEngine, MerchantNormalizer())
-        assertEquals(Categories.FOOD, c.categorize("Swiggy"))
+        assertEquals(Categories.FOOD, c.categorize("Swiggy").categoryId)
         // Deterministic dictionary, so nothing is cached — unlike an AI guess.
         assertNull(rules.categoryFor("swiggy"))
     }
@@ -88,6 +107,6 @@ class CategorizerTest {
         val rules = MapRuleRepository()
         val c = Categorizer(rules, NoOpAiEngine, MerchantNormalizer())
         c.correct("Swiggy", Categories.OTHER)
-        assertEquals(Categories.OTHER, c.categorize("Swiggy"))
+        assertEquals(Categories.OTHER, c.categorize("Swiggy").categoryId)
     }
 }

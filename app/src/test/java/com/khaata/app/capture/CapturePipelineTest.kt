@@ -70,6 +70,14 @@ class CapturePipelineTest {
         assertTrue(rawDao.captures.isEmpty())
     }
 
+    @Test fun `person-to-person UPI is saved as a transfer flagged for review`() = runTest {
+        val outcome = pipeline.process(raw("Rs.500 sent to RAHUL SHARMA via UPI Ref 123456789012"))
+        assertTrue(outcome is CaptureOutcome.Saved)
+        val txn = repo.inserted.first()
+        assertEquals(com.khaata.app.domain.model.Categories.TRANSFERS, txn.categoryId)
+        assertTrue("P2P transfer must be surfaced for review", txn.needsReview)
+    }
+
     @Test fun `non-transaction from financial source is logged but not stored`() = runTest {
         val outcome = pipeline.process(raw("Your OTP is 123456"))
         assertEquals(CaptureOutcome.NotParsed, outcome)

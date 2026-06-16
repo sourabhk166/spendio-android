@@ -260,8 +260,8 @@ private fun CategoryField(categoryId: String, direction: Direction, onPick: (Str
     // spending categories (Income makes no sense for a debit).
     val options = remember(direction) {
         when (direction) {
-            Direction.CREDIT -> CategoryCatalog.selectable.filter { it.id == Categories.INCOME || it.id == Categories.OTHER }
-            Direction.DEBIT -> CategoryCatalog.selectable.filter { it.id != Categories.INCOME }
+            Direction.CREDIT -> CategoryCatalog.incomeCategories
+            Direction.DEBIT -> CategoryCatalog.selectable.filter { it.id !in Categories.INCOME_ALL }
         }
     }
     Box {
