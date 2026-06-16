@@ -18,7 +18,14 @@ interface TransactionRepository {
 
     fun observeMonthlyTotals(month: YearMonth): Flow<MonthlyTotals>
 
+    /** Spending breakdown (DEBIT, excluding transfers/investments). */
     fun observeCategoryBreakdown(month: YearMonth): Flow<List<CategorySlice>>
+
+    /** Income breakdown by sub-category (CREDIT, excluding transfers). */
+    fun observeIncomeBreakdown(month: YearMonth): Flow<List<CategorySlice>>
+
+    /** Free-text search across merchant / raw merchant / note. Blank query yields nothing. */
+    fun search(query: String, limit: Int = 100): Flow<List<Transaction>>
 
     fun observeNeedsReview(): Flow<List<Transaction>>
 

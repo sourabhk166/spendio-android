@@ -33,16 +33,33 @@ interface TransactionDao {
 
     @Query(
         """SELECT COALESCE(SUM(amountMinor), 0) FROM transactions
-           WHERE direction = :direction AND occurredAt BETWEEN :from AND :to""",
+           WHERE direction = :direction AND occurredAt BETWEEN :from AND :to
+           AND categoryId NOT IN (:excludedCategories)""",
     )
-    fun observeTotal(direction: String, from: Long, to: Long): Flow<Long>
+    fun observeTotal(direction: String, from: Long, to: Long, excludedCategories: List<String>): Flow<Long>
 
     @Query(
         """SELECT categoryId, SUM(amountMinor) AS total FROM transactions
-           WHERE direction = 'DEBIT' AND occurredAt BETWEEN :from AND :to
+           WHERE direction = :direction AND occurredAt BETWEEN :from AND :to
+           AND categoryId NOT IN (:excludedCategories)
            GROUP BY categoryId""",
     )
-    fun observeCategoryTotals(from: Long, to: Long): Flow<List<CategoryTotal>>
+    fun observeCategoryTotals(
+        direction: String,
+        from: Long,
+        to: Long,
+        excludedCategories: List<String>,
+    ): Flow<List<CategoryTotal>>
+
+    /** Free-text search over merchant, raw merchant and note. Newest first. */
+    @Query(
+        """SELECT * FROM transactions
+           WHERE merchant LIKE '%' || :query || '%'
+              OR rawMerchant LIKE '%' || :query || '%'
+              OR note LIKE '%' || :query || '%'
+           ORDER BY occurredAt DESC LIMIT :limit""",
+    )
+    fun search(query: String, limit: Int): Flow<List<TransactionEntity>>
 
     @Query("SELECT * FROM transactions WHERE needsReview = 1 ORDER BY occurredAt DESC")
     fun observeNeedsReview(): Flow<List<TransactionEntity>>

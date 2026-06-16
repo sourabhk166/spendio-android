@@ -38,4 +38,14 @@ object Categories {
         FOOD, GROCERIES, SHOPPING, TRANSPORT, BILLS, ENTERTAINMENT,
         HEALTH, INVESTMENTS, TRANSFERS, INCOME, OTHER,
     )
+
+    /**
+     * Categories that move money rather than consume it, so they must NOT count as spending:
+     *  - Transfers: money shuffled between your own accounts, or a repayment (no net spend)
+     *  - Investments: SIPs / brokerage deposits build wealth, they aren't an expense
+     * Excluded from the "Spent" total and the spending breakdown. Transfers is likewise
+     * excluded from the "Received" total (an incoming repayment isn't income).
+     */
+    val NON_EXPENSE: List<String> = listOf(TRANSFERS, INVESTMENTS)
+    val NON_INCOME: List<String> = listOf(TRANSFERS)
 }

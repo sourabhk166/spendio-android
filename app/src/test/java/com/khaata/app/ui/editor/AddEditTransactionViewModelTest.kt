@@ -75,6 +75,8 @@ private class EmptyRepository : TransactionRepository {
     override fun observeMonthlyTotals(month: YearMonth): Flow<MonthlyTotals> =
         flowOf(MonthlyTotals(Money.ZERO, Money.ZERO))
     override fun observeCategoryBreakdown(month: YearMonth): Flow<List<CategorySlice>> = emptyFlow()
+    override fun observeIncomeBreakdown(month: YearMonth): Flow<List<CategorySlice>> = emptyFlow()
+    override fun search(query: String, limit: Int): Flow<List<Transaction>> = emptyFlow()
     override fun observeNeedsReview(): Flow<List<Transaction>> = emptyFlow()
     override fun observeNeedsReviewCount(): Flow<Int> = flowOf(0)
     override suspend fun approveReview(id: String) = Unit

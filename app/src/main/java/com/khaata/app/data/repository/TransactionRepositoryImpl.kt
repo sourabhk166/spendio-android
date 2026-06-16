@@ -3,6 +3,7 @@ package com.khaata.app.data.repository
 import com.khaata.app.data.db.TransactionDao
 import com.khaata.app.data.mapper.toDomain
 import com.khaata.app.data.mapper.toEntity
+import com.khaata.app.domain.model.Categories
 import com.khaata.app.domain.model.CategorySlice
 import com.khaata.app.domain.model.Direction
 import com.khaata.app.domain.model.Insights
@@ -12,6 +13,7 @@ import com.khaata.app.domain.repository.MonthlyTotals
 import com.khaata.app.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.YearMonth
 import java.time.ZoneId
@@ -36,16 +38,32 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override fun observeMonthlyTotals(month: YearMonth): Flow<MonthlyTotals> {
         val (from, to) = month.bounds()
-        val spent = dao.observeTotal(Direction.DEBIT.name, from, to)
-        val income = dao.observeTotal(Direction.CREDIT.name, from, to)
+        // Spent = real consumption (no transfers / investments); Received = real income (no transfers).
+        val spent = dao.observeTotal(Direction.DEBIT.name, from, to, Categories.NON_EXPENSE)
+        val income = dao.observeTotal(Direction.CREDIT.name, from, to, Categories.NON_INCOME)
         return combine(spent, income) { s, i -> MonthlyTotals(Money(s), Money(i)) }
     }
 
     override fun observeCategoryBreakdown(month: YearMonth): Flow<List<CategorySlice>> {
         val (from, to) = month.bounds()
-        return dao.observeCategoryTotals(from, to).map { rows ->
+        return dao.observeCategoryTotals(Direction.DEBIT.name, from, to, Categories.NON_EXPENSE).map { rows ->
             Insights.slices(rows.associate { it.categoryId to it.total })
         }
+    }
+
+    override fun observeIncomeBreakdown(month: YearMonth): Flow<List<CategorySlice>> {
+        val (from, to) = month.bounds()
+        return dao.observeCategoryTotals(Direction.CREDIT.name, from, to, Categories.NON_INCOME).map { rows ->
+            Insights.slices(rows.associate { it.categoryId to it.total })
+        }
+    }
+
+    override fun search(query: String, limit: Int): Flow<List<Transaction>> {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return flowOf(emptyList())
+        // Escape LIKE wildcards so a literal % or _ in the query doesn't match everything.
+        val escaped = trimmed.replace("%", "").replace("_", "")
+        return dao.search(escaped, limit).map { rows -> rows.map { it.toDomain() } }
     }
 
     override fun observeNeedsReview(): Flow<List<Transaction>> =

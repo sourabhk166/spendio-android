@@ -9,6 +9,8 @@ data class TransactionUi(
     val id: String,
     val title: String,
     val amountLabel: String,
+    /** Signed minor units (paise): positive for credit, negative for debit. For daily nets. */
+    val signedMinor: Long,
     val direction: Direction,
     val occurredAtMillis: Long,
     val needsReview: Boolean,
@@ -21,6 +23,7 @@ fun Transaction.toUi(): TransactionUi = TransactionUi(
     id = id,
     title = merchant ?: rawMerchant ?: "Unknown",
     amountLabel = amount.format(),
+    signedMinor = if (direction == Direction.CREDIT) amount.minorUnits else -amount.minorUnits,
     direction = direction,
     occurredAtMillis = occurredAt.toEpochMilli(),
     needsReview = needsReview,

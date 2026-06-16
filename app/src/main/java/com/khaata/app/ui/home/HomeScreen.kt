@@ -19,9 +19,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,6 +58,7 @@ import java.util.Locale
 fun HomeScreen(
     onOpenReview: () -> Unit,
     onEditTransaction: (String) -> Unit,
+    onOpenSearch: () -> Unit,
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -75,6 +79,7 @@ fun HomeScreen(
                 label = state.month.formatLabel(),
                 onPrev = viewModel::prevMonth,
                 onNext = viewModel::nextMonth,
+                onSearch = onOpenSearch,
             )
         }
 
@@ -107,26 +112,80 @@ fun HomeScreen(
                 )
             }
         } else {
-            items(state.recent, key = { it.id }) { txn ->
-                TransactionRow(txn, onClick = { onEditTransaction(txn.id) })
+            // Group by day (list is already newest-first) with a per-day net header — the
+            // scannable daily structure users expect from a money tracker.
+            val groups = state.recent.groupBy {
+                Instant.ofEpochMilli(it.occurredAtMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+            }
+            groups.forEach { (date, txns) ->
+                item(key = "header-$date") {
+                    DayHeader(date = date, netMinor = txns.sumOf { it.signedMinor })
+                }
+                items(txns, key = { it.id }) { txn ->
+                    TransactionRow(txn, onClick = { onEditTransaction(txn.id) })
+                }
             }
         }
     }
 }
 
 @Composable
-private fun MonthNav(label: String, onPrev: () -> Unit, onNext: () -> Unit) {
+private fun DayHeader(date: java.time.LocalDate, netMinor: Long) {
+    val net = Money(kotlin.math.abs(netMinor))
+    val sign = if (netMinor < 0) "−" else "+"
+    val color = if (netMinor < 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = date.formatDayLabel(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "$sign${net.format()}",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Medium,
+            color = color,
+        )
+    }
+}
+
+private fun java.time.LocalDate.formatDayLabel(): String {
+    val today = java.time.LocalDate.now()
+    return when (this) {
+        today -> "Today"
+        today.minusDays(1) -> "Yesterday"
+        else -> dayHeaderFormatter.format(this)
+    }
+}
+
+private val dayHeaderFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("EEE, d MMM", Locale("en", "IN"))
+
+@Composable
+private fun MonthNav(label: String, onPrev: () -> Unit, onNext: () -> Unit, onSearch: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         IconButton(onClick = onPrev) {
             Text("‹", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f),
+        )
         IconButton(onClick = onNext) {
             Text("›", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        IconButton(onClick = onSearch) {
+            Icon(Icons.Outlined.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
