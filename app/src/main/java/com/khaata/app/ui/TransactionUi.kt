@@ -21,7 +21,7 @@ data class TransactionUi(
 
 fun Transaction.toUi(): TransactionUi = TransactionUi(
     id = id,
-    title = merchant ?: rawMerchant ?: "Unknown",
+    title = displayName(merchant, rawMerchant),
     amountLabel = amount.format(),
     signedMinor = if (direction == Direction.CREDIT) amount.minorUnits else -amount.minorUnits,
     direction = direction,
@@ -31,3 +31,20 @@ fun Transaction.toUi(): TransactionUi = TransactionUi(
     categoryEmoji = CategoryCatalog.info(categoryId).emoji,
     rawMerchant = rawMerchant,
 )
+
+/**
+ * A human-friendly title. A user-set [merchant] is shown verbatim. Otherwise the captured
+ * [rawMerchant] is tidied for display: a UPI VPA like "amitverma42@okaxis" drops its bank
+ * handle ("amitverma42"), separators become spaces, and each word is capitalized — without
+ * mangling all-caps brand names (EATCLUB stays EATCLUB).
+ */
+internal fun displayName(merchant: String?, rawMerchant: String?): String {
+    merchant?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+    val raw = rawMerchant?.trim()?.takeIf { it.isNotBlank() } ?: return "Unknown"
+    val base = if ('@' in raw) raw.substringBefore('@') else raw
+    val cleaned = base.replace(Regex("[._]+"), " ").trim().ifBlank { return raw }
+    return cleaned.split(' ').joinToString(" ") { word ->
+        if (word.length > 1 && word == word.uppercase()) word // keep acronyms / all-caps brands
+        else word.replaceFirstChar { it.uppercaseChar() }
+    }
+}

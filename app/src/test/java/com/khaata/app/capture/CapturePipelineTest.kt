@@ -78,6 +78,18 @@ class CapturePipelineTest {
         assertTrue("P2P transfer must be surfaced for review", txn.needsReview)
     }
 
+    @Test fun `uncategorized incoming money is flagged for review`() = runTest {
+        // Credit from an unknown VPA (digits in the handle, no keyword match) — could be income,
+        // a repayment or a gift, so it should land in the review queue, not sit silently.
+        val outcome = pipeline.process(
+            raw("Rs.750.00 credited to HDFC Bank A/c XX8803 from VPA randomhandle99@oksbi (UPI 300000000104)"),
+        )
+        assertTrue(outcome is CaptureOutcome.Saved)
+        val txn = repo.inserted.first()
+        assertEquals(com.khaata.app.domain.model.Categories.UNCATEGORIZED, txn.categoryId)
+        assertTrue("Uncategorized incoming money must be surfaced for review", txn.needsReview)
+    }
+
     @Test fun `non-transaction from financial source is logged but not stored`() = runTest {
         val outcome = pipeline.process(raw("Your OTP is 123456"))
         assertEquals(CaptureOutcome.NotParsed, outcome)
