@@ -2,7 +2,9 @@ package com.khaata.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.khaata.app.domain.model.Categories
 import com.khaata.app.domain.model.CategorySlice
+import com.khaata.app.domain.model.Direction
 import com.khaata.app.domain.model.Money
 import com.khaata.app.domain.repository.TransactionRepository
 import com.khaata.app.ui.TransactionUi
@@ -22,12 +24,15 @@ data class HomeUiState(
     val month: YearMonth,
     val spent: Money,
     val income: Money,
+    val invested: Money,
+    val transfers: Money,
     val breakdown: List<CategorySlice>,
     val recent: List<TransactionUi>,
     val needsReviewCount: Int,
 ) {
     companion object {
-        fun empty(month: YearMonth) = HomeUiState(month, Money.ZERO, Money.ZERO, emptyList(), emptyList(), 0)
+        fun empty(month: YearMonth) =
+            HomeUiState(month, Money.ZERO, Money.ZERO, Money.ZERO, Money.ZERO, emptyList(), emptyList(), 0)
     }
 }
 
@@ -48,13 +53,18 @@ class HomeViewModel @Inject constructor(
                 // month navigation and the totals above it (was: latest 50 across all months).
                 repository.observeMonth(m),
                 repository.observeNeedsReviewCount(),
-            ) { totals, breakdown, recent, reviewCount ->
+            ) { totals, breakdown, monthTxns, reviewCount ->
+                fun sumOf(category: String) = monthTxns
+                    .filter { it.direction == Direction.DEBIT && it.categoryId == category }
+                    .fold(0L) { acc, t -> acc + t.amount.minorUnits }
                 HomeUiState(
                     month = m,
                     spent = totals.spent,
                     income = totals.income,
+                    invested = Money(sumOf(Categories.INVESTMENTS)),
+                    transfers = Money(sumOf(Categories.TRANSFERS)),
                     breakdown = breakdown,
-                    recent = recent.map { it.toUi() },
+                    recent = monthTxns.map { it.toUi() },
                     needsReviewCount = reviewCount,
                 )
             }

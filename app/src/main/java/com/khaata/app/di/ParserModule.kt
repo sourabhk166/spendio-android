@@ -3,6 +3,7 @@ package com.khaata.app.di
 import com.khaata.app.BuildConfig
 import com.khaata.app.ai.AiEngine
 import com.khaata.app.capture.CollectRawSamples
+import com.khaata.app.capture.UserNameSource
 import com.khaata.app.data.prefs.SettingsStore
 import com.khaata.app.parser.AiTierParser
 import com.khaata.app.parser.HeuristicParser
@@ -62,4 +63,8 @@ object ParserModule {
     @Provides
     @CollectRawSamples
     fun provideCollectRawSamples(): Boolean = BuildConfig.DEBUG
+
+    @Provides @Singleton
+    fun provideUserNameSource(settings: SettingsStore): UserNameSource =
+        UserNameSource { settings.userNameOnce() }
 }

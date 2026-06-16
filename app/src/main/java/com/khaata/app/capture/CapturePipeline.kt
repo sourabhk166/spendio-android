@@ -8,6 +8,7 @@ import com.khaata.app.domain.model.RawNotification
 import com.khaata.app.domain.model.Transaction
 import com.khaata.app.domain.repository.TransactionRepository
 import com.khaata.app.parser.Categorizer
+import com.khaata.app.parser.MerchantNormalizer
 import com.khaata.app.parser.SourceFilter
 import com.khaata.app.parser.TransactionFactory
 import com.khaata.app.parser.TransactionParser
@@ -31,6 +32,8 @@ class CapturePipeline @Inject constructor(
     private val categorizer: Categorizer,
     private val repository: TransactionRepository,
     private val rawCaptureDao: RawCaptureDao,
+    private val userNameSource: UserNameSource,
+    private val normalizer: MerchantNormalizer,
     @CollectRawSamples private val collectRawSamples: Boolean,
 ) {
     suspend fun process(raw: RawNotification): CaptureOutcome {
@@ -54,7 +57,12 @@ class CapturePipeline @Inject constructor(
 
         if (parsed == null || !parsed.isComplete) return CaptureOutcome.NotParsed
 
-        val categorization = categorizer.categorize(parsed.rawMerchant)
+        var categorization = categorizer.categorize(parsed.rawMerchant)
+        // Self-transfer: a person-to-person UPI where the other party is the user themselves
+        // (paying your own account). Re-route from UPI (counts as spend) to Transfers (excluded).
+        if (categorization.categoryId == Categories.UPI && isSelfTransfer(parsed.rawMerchant)) {
+            categorization = categorization.copy(categoryId = Categories.TRANSFERS)
+        }
         // Money coming IN that we couldn't categorize is worth a glance — it could be income,
         // a repayment, or a gift, and only the user knows. Surface it for review rather than
         // letting it sit silently as Uncategorized. (Unknown outgoing spends stay off the queue
@@ -69,5 +77,12 @@ class CapturePipeline @Inject constructor(
             forceReview = categorization.needsReview || incomingUnknown,
         )
         return if (repository.insertIfNew(txn)) CaptureOutcome.Saved(txn) else CaptureOutcome.Duplicate
+    }
+
+    /** True when the counterparty name matches the user's own name (a self-transfer). */
+    private suspend fun isSelfTransfer(rawMerchant: String?): Boolean {
+        val userName = normalizer.normalize(userNameSource.current()) ?: return false
+        val party = normalizer.normalize(rawMerchant) ?: return false
+        return party == userName
     }
 }

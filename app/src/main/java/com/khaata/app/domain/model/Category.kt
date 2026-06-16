@@ -15,6 +15,7 @@ object Categories {
     const val HEALTH = "health"
     const val INVESTMENTS = "investments"
     const val TRANSFERS = "transfers"
+    const val UPI = "upi"
     const val INCOME = "income"
     const val INCOME_SALARY = "income_salary"
     const val INCOME_FREELANCE = "income_freelance"
@@ -41,11 +42,17 @@ object Categories {
 
     /**
      * Categories that move money rather than consume it, so they must NOT count as spending:
-     *  - Transfers: money shuffled between your own accounts, or a repayment (no net spend)
+     *  - Transfers: money between your own accounts (self-transfer) — no net spend
      *  - Investments: SIPs / brokerage deposits build wealth, they aren't an expense
-     * Excluded from the "Spent" total and the spending breakdown. Transfers is likewise
-     * excluded from the "Received" total (an incoming repayment isn't income).
+     * Note UPI (person-to-person payments) deliberately DOES count as spending — most are real
+     * payments to vendors/people; only genuine self-transfers are filtered out (to Transfers).
      */
     val NON_EXPENSE: List<String> = listOf(TRANSFERS, INVESTMENTS)
-    val NON_INCOME: List<String> = listOf(TRANSFERS)
+
+    /**
+     * Categories excluded from the "Received" total:
+     *  - Transfers: an incoming self-transfer isn't income
+     *  - UPI: money received from a person (repayment/gift) isn't salary-style income
+     */
+    val NON_INCOME: List<String> = listOf(TRANSFERS, UPI)
 }

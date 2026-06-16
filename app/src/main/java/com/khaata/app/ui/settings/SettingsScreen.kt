@@ -25,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,7 +50,9 @@ fun SettingsScreen(
 ) {
     val appLock by viewModel.appLockEnabled.collectAsStateWithLifecycle()
     val sources by viewModel.sources.collectAsStateWithLifecycle()
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
     var confirmWipe by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
@@ -79,6 +82,15 @@ fun SettingsScreen(
             ) {
                 Switch(checked = appLock, onCheckedChange = viewModel::setAppLock)
             }
+        }
+
+        // Profile card — the name is used to tell self-transfers (paying your own account) apart.
+        SectionCard(title = "Profile") {
+            ClickableRow(
+                title = "Your name",
+                subtitle = userName.ifBlank { "Set your name to detect self-transfers" },
+                onClick = { editName = true },
+            )
         }
 
         // Sources card — the full per-app list lives on its own screen to keep Settings tidy.
@@ -167,6 +179,35 @@ fun SettingsScreen(
                 ) { Text("Delete") }
             },
             dismissButton = { TextButton(onClick = { confirmWipe = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (editName) {
+        var draft by remember { mutableStateOf(userName) }
+        AlertDialog(
+            onDismissRequest = { editName = false },
+            title = { Text("Your name") },
+            text = {
+                Column {
+                    Text(
+                        "Used only on-device to recognise transfers to your own accounts as transfers, not spending.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = draft,
+                        onValueChange = { draft = it },
+                        singleLine = true,
+                        placeholder = { Text("e.g. Arjun Mehta") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.setUserName(draft); editName = false }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { editName = false }) { Text("Cancel") } },
         )
     }
 }

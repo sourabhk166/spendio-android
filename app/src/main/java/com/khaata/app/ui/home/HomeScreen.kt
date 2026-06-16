@@ -83,7 +83,7 @@ fun HomeScreen(
             )
         }
 
-        item { HeroCard(spent = state.spent, income = state.income) }
+        item { HeroCard(spent = state.spent, income = state.income, invested = state.invested, transfers = state.transfers) }
 
         if (state.needsReviewCount > 0) {
             item { ReviewBanner(count = state.needsReviewCount, onClick = onOpenReview) }
@@ -191,7 +191,7 @@ private fun MonthNav(label: String, onPrev: () -> Unit, onNext: () -> Unit, onSe
 }
 
 @Composable
-private fun HeroCard(spent: Money, income: Money) {
+private fun HeroCard(spent: Money, income: Money, invested: Money, transfers: Money) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -214,23 +214,32 @@ private fun HeroCard(spent: Money, income: Money) {
                 modifier = Modifier.padding(vertical = 14.dp),
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                Column {
-                    Text(
-                        text = "Received",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = income.format(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                }
+            // Money that didn't "leave" as spending is shown here so it never silently vanishes:
+            // what you received, invested, and moved between accounts. Zero buckets are hidden.
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                HeroStat("Received", income)
+                if (invested.minorUnits > 0) HeroStat("Invested", invested)
+                if (transfers.minorUnits > 0) HeroStat("Transfers", transfers)
             }
         }
+    }
+}
+
+@Composable
+private fun HeroStat(label: String, amount: Money) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = amount.format(),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onPrimary,
+        )
     }
 }
 

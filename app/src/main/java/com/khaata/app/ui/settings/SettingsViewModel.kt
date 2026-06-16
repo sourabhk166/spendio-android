@@ -27,6 +27,11 @@ class SettingsViewModel @Inject constructor(
     val appLockEnabled: StateFlow<Boolean> =
         settings.appLockEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    val userName: StateFlow<String> =
+        settings.userName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    fun setUserName(name: String) = viewModelScope.launch { settings.setUserName(name) }
+
     val sources: StateFlow<List<SourceToggle>> =
         settings.disabledSources.map { disabled ->
             KnownSources.ALL.map { SourceToggle(it.packageName, it.displayName, it.packageName !in disabled) }

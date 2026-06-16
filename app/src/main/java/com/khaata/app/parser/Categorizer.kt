@@ -29,11 +29,12 @@ class Categorizer @Inject constructor(
         val key = normalizer.normalize(rawMerchant) ?: return Categorization(Categories.UNCATEGORIZED)
         rules.categoryFor(key)?.let { return Categorization(it) }
         MerchantKeywords.categoryFor(key)?.let { return Categorization(it) }
-        // UPI P2P heuristic: two or more all-alphabetic tokens → person name → Transfers.
+        // UPI P2P heuristic: two or more all-alphabetic tokens → person name → UPI.
         // Runs after keyword lookup so known brands (Airtel, Zerodha, etc.) are never affected.
-        // Flagged for review: sending/receiving money to a person could be a transfer, a
-        // repayment, a gift, or income — only the user knows which.
-        if (isPersonName(key)) return Categorization(Categories.TRANSFERS, needsReview = true)
+        // UPI counts as spending (most person payments are real); a genuine self-transfer is
+        // re-routed to Transfers later in the capture pipeline, where the user's own name is known.
+        // Flagged for review since the meaning (payment / repayment / gift) is the user's to confirm.
+        if (isPersonName(key)) return Categorization(Categories.UPI, needsReview = true)
         val predicted = ai.classifyCategory(key) ?: return Categorization(Categories.UNCATEGORIZED)
         if (predicted !in Categories.ALL) return Categorization(Categories.UNCATEGORIZED)
         rules.put(key, predicted, userConfirmed = false)

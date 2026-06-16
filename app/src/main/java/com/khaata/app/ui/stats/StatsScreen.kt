@@ -76,18 +76,18 @@ fun StatsScreen(
             ModeToggle(mode = state.mode, onSelect = viewModel::setMode)
         }
 
-        if (state.slices.isEmpty()) {
+        if (state.mode == StatsMode.INVEST) {
+            if (state.investments.isEmpty()) {
+                item { EmptyHint("No investments recorded this month yet.") }
+            } else {
+                item { TotalCard(total = state.total, caption = "Invested this month") }
+                items(state.investments, key = { it.id }) { txn -> InvestmentRow(txn) }
+            }
+        } else if (state.slices.isEmpty()) {
             item {
-                Text(
-                    text = if (state.mode == StatsMode.EXPENSE) {
-                        "No spending this month yet."
-                    } else {
-                        "No income recorded this month yet."
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 40.dp),
-                    textAlign = TextAlign.Center,
+                EmptyHint(
+                    if (state.mode == StatsMode.EXPENSE) "No spending this month yet."
+                    else "No income recorded this month yet.",
                 )
             }
         } else {
@@ -101,6 +101,53 @@ fun StatsScreen(
             items(state.slices, key = { it.categoryId }) { slice ->
                 CategoryRow(slice, budgetMinor = state.budgets[slice.categoryId])
             }
+        }
+    }
+}
+
+@Composable
+private fun EmptyHint(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+        textAlign = TextAlign.Center,
+    )
+}
+
+@Composable
+private fun TotalCard(total: Money, caption: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(20.dp)) {
+            Text(caption, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(4.dp))
+            Text(total.format(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun InvestmentRow(txn: com.khaata.app.ui.TransactionUi) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("📈", style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.width(10.dp))
+            Text(txn.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            Text(txn.amountLabel, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -121,6 +168,9 @@ private fun ModeToggle(mode: StatsMode, onSelect: (StatsMode) -> Unit) {
         }
         ToggleSegment("Income", selected = mode == StatsMode.INCOME, modifier = Modifier.weight(1f)) {
             onSelect(StatsMode.INCOME)
+        }
+        ToggleSegment("Invest", selected = mode == StatsMode.INVEST, modifier = Modifier.weight(1f)) {
+            onSelect(StatsMode.INVEST)
         }
     }
 }

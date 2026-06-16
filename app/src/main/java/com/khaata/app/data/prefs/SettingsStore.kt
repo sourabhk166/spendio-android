@@ -3,6 +3,7 @@ package com.khaata.app.data.prefs
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,6 +24,16 @@ class SettingsStore @Inject constructor(
     private object Keys {
         val APP_LOCK = booleanPreferencesKey("app_lock_enabled")
         val DISABLED_SOURCES = stringSetPreferencesKey("disabled_sources")
+        val USER_NAME = stringPreferencesKey("user_name")
+    }
+
+    /** The user's own name, used to spot self-transfers (paying your own account). Blank = unset. */
+    val userName: Flow<String> = context.dataStore.data.map { it[Keys.USER_NAME] ?: "" }
+
+    suspend fun userNameOnce(): String = userName.first()
+
+    suspend fun setUserName(name: String) {
+        context.dataStore.edit { it[Keys.USER_NAME] = name.trim() }
     }
 
     val appLockEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.APP_LOCK] ?: false }

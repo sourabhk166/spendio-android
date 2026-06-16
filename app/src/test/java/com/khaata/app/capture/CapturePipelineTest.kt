@@ -33,12 +33,16 @@ class CapturePipelineTest {
 
     private val categorizer = Categorizer(FakeRuleRepository(), NoOpAiEngine, MerchantNormalizer())
 
+    private var userName = ""
+
     private val pipeline = CapturePipeline(
         sourceFilter = SourceFilter(),
         parser = TieredTransactionParser(TransactionDetector(), RegexTierParser(), HeuristicParser()),
         categorizer = categorizer,
         repository = repo,
         rawCaptureDao = rawDao,
+        userNameSource = { userName },
+        normalizer = MerchantNormalizer(),
         collectRawSamples = true,
     )
 
@@ -70,12 +74,23 @@ class CapturePipelineTest {
         assertTrue(rawDao.captures.isEmpty())
     }
 
-    @Test fun `person-to-person UPI is saved as a transfer flagged for review`() = runTest {
+    @Test fun `person-to-person UPI is categorized UPI and flagged for review`() = runTest {
         val outcome = pipeline.process(raw("Rs.500 sent to RAHUL SHARMA via UPI Ref 123456789012"))
         assertTrue(outcome is CaptureOutcome.Saved)
         val txn = repo.inserted.first()
+        // UPI counts as spending (most person payments are real), and is surfaced for review.
+        assertEquals(com.khaata.app.domain.model.Categories.UPI, txn.categoryId)
+        assertTrue("P2P payment must be surfaced for review", txn.needsReview)
+    }
+
+    @Test fun `self-transfer is re-routed to Transfers when the name matches the user`() = runTest {
+        userName = "Arjun Mehta"
+        val outcome = pipeline.process(raw("Rs.5000 sent to ARJUN MEHTA via UPI Ref 998877665544"))
+        assertTrue(outcome is CaptureOutcome.Saved)
+        val txn = repo.inserted.first()
+        // Paying your own account → Transfers (excluded from spend), still flagged for review.
         assertEquals(com.khaata.app.domain.model.Categories.TRANSFERS, txn.categoryId)
-        assertTrue("P2P transfer must be surfaced for review", txn.needsReview)
+        assertTrue(txn.needsReview)
     }
 
     @Test fun `uncategorized incoming money is flagged for review`() = runTest {

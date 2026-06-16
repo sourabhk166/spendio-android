@@ -69,12 +69,12 @@ class CategorizerTest {
         assertEquals(Categories.UNCATEGORIZED, c.categorize("Xyzacme").categoryId)
     }
 
-    @Test fun `two-word person name is transfers and flagged for review`() = runTest {
+    @Test fun `two-word person name is UPI and flagged for review`() = runTest {
         val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
         val rahul = c.categorize("RAHUL SHARMA")
-        assertEquals(Categories.TRANSFERS, rahul.categoryId)
-        assertTrue("P2P person transfers must be surfaced for review", rahul.needsReview)
-        assertEquals(Categories.TRANSFERS, c.categorize("Karan Malhotra").categoryId)
+        assertEquals(Categories.UPI, rahul.categoryId)
+        assertTrue("P2P person payments must be surfaced for review", rahul.needsReview)
+        assertEquals(Categories.UPI, c.categorize("Karan Malhotra").categoryId)
     }
 
     @Test fun `known brand two-word name is not mistaken for a person`() = runTest {

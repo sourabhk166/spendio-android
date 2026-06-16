@@ -18,6 +18,7 @@ object CategoryCatalog {
         CategoryInfo(Categories.ENTERTAINMENT, "Entertainment", "🎬", "#EC407A"),
         CategoryInfo(Categories.HEALTH, "Health", "💊", "#26A69A"),
         CategoryInfo(Categories.INVESTMENTS, "Investments", "📈", "#5C6BC0"),
+        CategoryInfo(Categories.UPI, "UPI", "📲", "#7E57C2"),
         CategoryInfo(Categories.TRANSFERS, "Transfers", "🔁", "#78909C"),
         CategoryInfo(Categories.INCOME, "Other Income", "💰", "#9CCC65"),
         CategoryInfo(Categories.INCOME_SALARY, "Salary", "💼", "#43A047"),
