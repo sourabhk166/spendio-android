@@ -83,6 +83,7 @@ private class EmptyRepository : TransactionRepository {
     override suspend fun recategorize(id: String, categoryId: String) = Unit
     override suspend fun getById(id: String): Transaction? = null
     override suspend fun allTransactions(): List<Transaction> = emptyList()
+    override suspend fun transactionsBetween(fromMillis: Long, toMillis: Long): List<Transaction> = emptyList()
     override suspend fun update(txn: Transaction) = Unit
     override suspend fun delete(txn: Transaction) = Unit
     override suspend fun count(): Int = 0

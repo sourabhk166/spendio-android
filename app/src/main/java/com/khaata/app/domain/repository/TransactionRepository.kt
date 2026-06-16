@@ -41,6 +41,9 @@ interface TransactionRepository {
     /** Every transaction, newest first — used for CSV export. */
     suspend fun allTransactions(): List<Transaction>
 
+    /** Transactions occurring within [fromMillis]..[toMillis], newest first. */
+    suspend fun transactionsBetween(fromMillis: Long, toMillis: Long): List<Transaction>
+
     suspend fun update(txn: Transaction)
 
     suspend fun delete(txn: Transaction)

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.khaata.app.BuildConfig
+import com.khaata.app.data.export.ExportRange
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -29,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,7 +58,19 @@ fun SettingsScreen(
     val userName by viewModel.userName.collectAsStateWithLifecycle()
     var confirmWipe by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(false) }
+    var showExport by remember { mutableStateOf(false) }
+    var showCustomRange by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    val runExport: (ExportRange) -> Unit = { range ->
+        viewModel.exportCsv(range) { csv ->
+            if (csv == null) {
+                Toast.makeText(context, "Nothing to export in that range", Toast.LENGTH_SHORT).show()
+            } else {
+                shareCsv(context, csv)
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -112,16 +129,8 @@ fun SettingsScreen(
             HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
             ClickableRow(
                 title = "Export to CSV",
-                subtitle = "Share all transactions as a spreadsheet",
-                onClick = {
-                    viewModel.exportCsv { csv ->
-                        if (csv == null) {
-                            Toast.makeText(context, "Nothing to export yet", Toast.LENGTH_SHORT).show()
-                        } else {
-                            shareCsv(context, csv)
-                        }
-                    }
-                },
+                subtitle = "Pick a date range to share as a spreadsheet",
+                onClick = { showExport = true },
             )
         }
 
@@ -182,6 +191,31 @@ fun SettingsScreen(
         )
     }
 
+    if (showExport) {
+        AlertDialog(
+            onDismissRequest = { showExport = false },
+            title = { Text("Export to CSV") },
+            text = {
+                Column {
+                    ExportOption("This month") { showExport = false; runExport(ExportRange.ThisMonth) }
+                    ExportOption("Last 3 months") { showExport = false; runExport(ExportRange.Last3Months) }
+                    ExportOption("This year") { showExport = false; runExport(ExportRange.ThisYear) }
+                    ExportOption("All time") { showExport = false; runExport(ExportRange.AllTime) }
+                    ExportOption("Custom range…") { showExport = false; showCustomRange = true }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { showExport = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (showCustomRange) {
+        CustomRangeDialog(
+            onDismiss = { showCustomRange = false },
+            onConfirm = { from, to -> showCustomRange = false; runExport(ExportRange.Custom(from, to)) },
+        )
+    }
+
     if (editName) {
         var draft by remember { mutableStateOf(userName) }
         AlertDialog(
@@ -230,6 +264,40 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
             )
             content()
         }
+    }
+}
+
+@Composable
+private fun ExportOption(label: String, onClick: () -> Unit) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 14.dp),
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CustomRangeDialog(onDismiss: () -> Unit, onConfirm: (Long, Long) -> Unit) {
+    val state = rememberDateRangePickerState()
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            val from = state.selectedStartDateMillis
+            val to = state.selectedEndDateMillis
+            TextButton(
+                enabled = from != null && to != null,
+                onClick = {
+                    if (from != null && to != null) {
+                        // selectedEndDateMillis is UTC midnight; extend to end-of-day so the last day is inclusive.
+                        onConfirm(from, to + 86_399_999L)
+                    }
+                },
+            ) { Text("Export") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    ) {
+        DateRangePicker(state = state, modifier = Modifier.height(460.dp))
     }
 }
 

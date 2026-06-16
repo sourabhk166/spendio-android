@@ -80,6 +80,10 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY occurredAt DESC")
     suspend fun getAll(): List<TransactionEntity>
 
+    /** Transactions in a time window, newest first — used for date-ranged export. */
+    @Query("SELECT * FROM transactions WHERE occurredAt BETWEEN :from AND :to ORDER BY occurredAt DESC")
+    suspend fun getBetween(from: Long, to: Long): List<TransactionEntity>
+
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun count(): Int
 

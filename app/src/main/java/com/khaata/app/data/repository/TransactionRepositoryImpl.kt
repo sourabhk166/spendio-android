@@ -79,6 +79,9 @@ class TransactionRepositoryImpl @Inject constructor(
 
     override suspend fun allTransactions(): List<Transaction> = dao.getAll().map { it.toDomain() }
 
+    override suspend fun transactionsBetween(fromMillis: Long, toMillis: Long): List<Transaction> =
+        dao.getBetween(fromMillis, toMillis).map { it.toDomain() }
+
     override suspend fun update(txn: Transaction) = dao.update(txn.toEntity())
 
     override suspend fun delete(txn: Transaction) = dao.delete(txn.toEntity())

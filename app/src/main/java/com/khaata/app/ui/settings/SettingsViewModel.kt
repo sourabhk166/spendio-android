@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.khaata.app.data.DataMaintenance
 import com.khaata.app.data.export.CsvExporter
+import com.khaata.app.data.export.ExportRange
 import com.khaata.app.data.prefs.SettingsStore
 import com.khaata.app.domain.repository.TransactionRepository
 import com.khaata.app.parser.KnownSources
@@ -45,12 +46,17 @@ class SettingsViewModel @Inject constructor(
     fun wipeAll() = viewModelScope.launch { dataMaintenance.wipeAll() }
 
     /**
-     * Builds the CSV for all transactions off the main thread and hands it back via [onReady]
+     * Builds the CSV for the chosen [range] off the main thread and hands it back via [onReady]
      * (invoked on the main thread). The caller writes the file and launches the share sheet,
      * which need an Activity context. [onReady] receives null when there's nothing to export.
      */
-    fun exportCsv(onReady: (String?) -> Unit) = viewModelScope.launch {
-        val txns = repository.allTransactions()
+    fun exportCsv(range: ExportRange, onReady: (String?) -> Unit) = viewModelScope.launch {
+        val txns = if (range is ExportRange.AllTime) {
+            repository.allTransactions()
+        } else {
+            val (from, to) = range.bounds()
+            repository.transactionsBetween(from, to)
+        }
         onReady(if (txns.isEmpty()) null else CsvExporter.toCsv(txns))
     }
 }
