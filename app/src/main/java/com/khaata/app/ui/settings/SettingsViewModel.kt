@@ -3,6 +3,7 @@ package com.khaata.app.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.khaata.app.data.DataMaintenance
+import com.khaata.app.data.backup.AutoBackupController
 import com.khaata.app.data.backup.BackupManager
 import com.khaata.app.data.export.CsvExporter
 import com.khaata.app.data.export.ExportRange
@@ -25,15 +26,23 @@ class SettingsViewModel @Inject constructor(
     private val dataMaintenance: DataMaintenance,
     private val repository: TransactionRepository,
     private val backupManager: BackupManager,
+    private val autoBackup: AutoBackupController,
 ) : ViewModel() {
 
     val appLockEnabled: StateFlow<Boolean> =
         settings.appLockEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    val autoBackupEnabled: StateFlow<Boolean> =
+        settings.autoBackupEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     val userName: StateFlow<String> =
         settings.userName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
     fun setUserName(name: String) = viewModelScope.launch { settings.setUserName(name) }
+
+    fun enableAutoBackup(passphrase: CharArray) = viewModelScope.launch { autoBackup.enable(passphrase) }
+
+    fun disableAutoBackup() = viewModelScope.launch { autoBackup.disable() }
 
     val sources: StateFlow<List<SourceToggle>> =
         settings.disabledSources.map { disabled ->

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup rules for Android 11 and below (fullBackupContent).
+  ONLY the encrypted auto-backup blob is backed up — it's already passphrase-encrypted, so the
+  OS uploads ciphertext to the user's own Google Drive. The plaintext SQLCipher database, its
+  Keystore-sealed passphrase, the auto-backup passphrase seal, and DataStore prefs are all left
+  out (include-only restricts the set), so nothing sensitive or device-locked ever leaves.
+-->
+<full-backup-content>
+    <include domain="file" path="autobackup/" />
+</full-backup-content>

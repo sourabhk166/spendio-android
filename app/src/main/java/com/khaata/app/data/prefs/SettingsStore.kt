@@ -25,6 +25,16 @@ class SettingsStore @Inject constructor(
         val APP_LOCK = booleanPreferencesKey("app_lock_enabled")
         val DISABLED_SOURCES = stringSetPreferencesKey("disabled_sources")
         val USER_NAME = stringPreferencesKey("user_name")
+        val AUTO_BACKUP = booleanPreferencesKey("auto_backup_enabled")
+    }
+
+    /** Whether automatic (Auto Backup) encrypted backups are on. Off by default. */
+    val autoBackupEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.AUTO_BACKUP] ?: false }
+
+    suspend fun autoBackupEnabledOnce(): Boolean = autoBackupEnabled.first()
+
+    suspend fun setAutoBackup(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.AUTO_BACKUP] = enabled }
     }
 
     /** The user's own name, used to spot self-transfers (paying your own account). Blank = unset. */

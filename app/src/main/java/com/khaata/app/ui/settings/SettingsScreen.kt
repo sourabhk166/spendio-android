@@ -56,12 +56,14 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val appLock by viewModel.appLockEnabled.collectAsStateWithLifecycle()
+    val autoBackupEnabled by viewModel.autoBackupEnabled.collectAsStateWithLifecycle()
     val sources by viewModel.sources.collectAsStateWithLifecycle()
     val userName by viewModel.userName.collectAsStateWithLifecycle()
     var confirmWipe by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(false) }
     var showExport by remember { mutableStateOf(false) }
     var showCustomRange by remember { mutableStateOf(false) }
+    var autoBackupPassphrase by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val runExport: (ExportRange) -> Unit = { range ->
@@ -165,8 +167,18 @@ fun SettingsScreen(
             )
         }
 
-        // Backup card — encrypted backup file you control; nothing is uploaded by the app.
+        // Backup card — everything is passphrase-encrypted; only ciphertext ever leaves the device.
         SectionCard(title = "Backup") {
+            SettingRow(
+                title = "Automatic backup",
+                subtitle = "Encrypted, kept in sync with your Google account",
+            ) {
+                Switch(
+                    checked = autoBackupEnabled,
+                    onCheckedChange = { on -> if (on) autoBackupPassphrase = true else viewModel.disableAutoBackup() },
+                )
+            }
+            HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
             ClickableRow(
                 title = "Back up data",
                 subtitle = "Save an encrypted backup you can restore later",
@@ -234,6 +246,43 @@ fun SettingsScreen(
                 ) { Text("Delete") }
             },
             dismissButton = { TextButton(onClick = { confirmWipe = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (autoBackupPassphrase) {
+        var pass by remember { mutableStateOf("") }
+        var confirm by remember { mutableStateOf("") }
+        val valid = pass.length >= 6 && pass == confirm
+        AlertDialog(
+            onDismissRequest = { autoBackupPassphrase = false },
+            title = { Text("Turn on automatic backup") },
+            text = {
+                Column {
+                    Text(
+                        "Khaata keeps an encrypted backup in sync with your phone's Google account. Set a passphrase — you'll need it to restore on a new phone, and it can't be recovered if forgotten.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(pass, { pass = it }, singleLine = true, label = { Text("Passphrase") }, modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(confirm, { confirm = it }, singleLine = true, label = { Text("Confirm passphrase") }, modifier = Modifier.fillMaxWidth())
+                    if (pass.isNotEmpty() && pass.length < 6) {
+                        Text("At least 6 characters.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = valid,
+                    onClick = {
+                        viewModel.enableAutoBackup(pass.toCharArray())
+                        autoBackupPassphrase = false
+                        Toast.makeText(context, "Automatic backup on", Toast.LENGTH_SHORT).show()
+                    },
+                ) { Text("Turn on") }
+            },
+            dismissButton = { TextButton(onClick = { autoBackupPassphrase = false }) { Text("Cancel") } },
         )
     }
 
