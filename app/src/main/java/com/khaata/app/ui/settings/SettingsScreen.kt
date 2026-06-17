@@ -25,8 +25,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -35,7 +35,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDateRangePickerState
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,7 +62,9 @@ fun SettingsScreen(
     var confirmWipe by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(false) }
     var showExport by remember { mutableStateOf(false) }
-    var showCustomRange by remember { mutableStateOf(false) }
+    var pickStartDate by remember { mutableStateOf(false) }
+    var pickEndDate by remember { mutableStateOf(false) }
+    var customStart by remember { mutableStateOf<Long?>(null) }
     var autoBackupPassphrase by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
@@ -296,7 +298,7 @@ fun SettingsScreen(
                     ExportOption("Last 3 months") { showExport = false; runExport(ExportRange.Last3Months) }
                     ExportOption("This year") { showExport = false; runExport(ExportRange.ThisYear) }
                     ExportOption("All time") { showExport = false; runExport(ExportRange.AllTime) }
-                    ExportOption("Custom range…") { showExport = false; showCustomRange = true }
+                    ExportOption("Custom range…") { showExport = false; pickStartDate = true }
                 }
             },
             confirmButton = {},
@@ -304,10 +306,26 @@ fun SettingsScreen(
         )
     }
 
-    if (showCustomRange) {
-        CustomRangeDialog(
-            onDismiss = { showCustomRange = false },
-            onConfirm = { from, to -> showCustomRange = false; runExport(ExportRange.Custom(from, to)) },
+    if (pickStartDate) {
+        SingleDateDialog(
+            title = "Start date",
+            onDismiss = { pickStartDate = false },
+            onPick = { millis -> customStart = millis; pickStartDate = false; pickEndDate = true },
+        )
+    }
+
+    if (pickEndDate) {
+        SingleDateDialog(
+            title = "End date",
+            onDismiss = { pickEndDate = false },
+            onPick = { end ->
+                pickEndDate = false
+                val start = customStart ?: 0L
+                // Order-proof, and extend the end to end-of-day so the last day is inclusive.
+                val from = minOf(start, end)
+                val to = maxOf(start, end) + 86_399_999L
+                runExport(ExportRange.Custom(from, to))
+            },
         )
     }
 
@@ -449,26 +467,19 @@ private fun ExportOption(label: String, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CustomRangeDialog(onDismiss: () -> Unit, onConfirm: (Long, Long) -> Unit) {
-    val state = rememberDateRangePickerState()
+private fun SingleDateDialog(title: String, onDismiss: () -> Unit, onPick: (Long) -> Unit) {
+    val state = rememberDatePickerState()
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            val from = state.selectedStartDateMillis
-            val to = state.selectedEndDateMillis
             TextButton(
-                enabled = from != null && to != null,
-                onClick = {
-                    if (from != null && to != null) {
-                        // selectedEndDateMillis is UTC midnight; extend to end-of-day so the last day is inclusive.
-                        onConfirm(from, to + 86_399_999L)
-                    }
-                },
-            ) { Text("Export") }
+                enabled = state.selectedDateMillis != null,
+                onClick = { state.selectedDateMillis?.let(onPick) },
+            ) { Text("Next") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     ) {
-        DateRangePicker(state = state, modifier = Modifier.height(460.dp))
+        DatePicker(state = state, title = { Text(title, modifier = Modifier.padding(start = 24.dp, top = 16.dp)) })
     }
 }
 
