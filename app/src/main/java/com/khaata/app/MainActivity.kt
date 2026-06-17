@@ -37,7 +37,12 @@ class MainActivity : FragmentActivity() {
                 when {
                     locked.value -> LockScreen(onUnlock = ::promptUnlock)
                     captureEnabled.value -> AppNav(onEnableCapture = { NotificationAccess.openSettings(this) })
-                    else -> PermissionScreen(onGrantClick = { NotificationAccess.openSettings(this) })
+                    else -> PermissionScreen(
+                        onGrant = { name ->
+                            if (name.isNotBlank()) lifecycleScope.launch { settings.setUserName(name) }
+                            NotificationAccess.openSettings(this)
+                        },
+                    )
                 }
             }
         }
