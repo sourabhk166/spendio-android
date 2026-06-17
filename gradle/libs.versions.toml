@@ -13,6 +13,7 @@ coroutines = "1.8.1"
 datastore = "1.1.1"
 biometric = "1.1.0"
 coreSplashscreen = "1.0.1"
+kotlinxSerialization = "1.7.3"
 sqlcipher = "4.6.1"
 sqlite = "2.4.0"
 junit = "4.13.2"
@@ -42,6 +43,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 androidx-sqlite = { group = "androidx.sqlite", name = "sqlite", version.ref = "sqlite" }
 sqlcipher = { group = "net.zetetic", name = "sqlcipher-android", version.ref = "sqlcipher" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -53,5 +55,6 @@ androidx-material-icons-extended = { group = "androidx.compose.material", name =
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

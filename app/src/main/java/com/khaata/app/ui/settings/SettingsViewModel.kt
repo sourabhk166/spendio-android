@@ -3,6 +3,7 @@ package com.khaata.app.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.khaata.app.data.DataMaintenance
+import com.khaata.app.data.backup.BackupManager
 import com.khaata.app.data.export.CsvExporter
 import com.khaata.app.data.export.ExportRange
 import com.khaata.app.data.prefs.SettingsStore
@@ -23,6 +24,7 @@ class SettingsViewModel @Inject constructor(
     private val settings: SettingsStore,
     private val dataMaintenance: DataMaintenance,
     private val repository: TransactionRepository,
+    private val backupManager: BackupManager,
 ) : ViewModel() {
 
     val appLockEnabled: StateFlow<Boolean> =
@@ -59,4 +61,16 @@ class SettingsViewModel @Inject constructor(
         }
         onReady(if (txns.isEmpty()) null else CsvExporter.toCsv(txns))
     }
+
+    /** Builds the encrypted backup bytes; [onReady] gets null if there's nothing to back up. */
+    fun createBackup(passphrase: CharArray, onReady: (ByteArray?) -> Unit) = viewModelScope.launch {
+        val hasData = repository.count() > 0
+        onReady(if (hasData) backupManager.createBackup(passphrase) else null)
+    }
+
+    /** Decrypts and imports [blob]; [onResult] gets the count added, or a failure on bad passphrase. */
+    fun restoreBackup(blob: ByteArray, passphrase: CharArray, onResult: (Result<Int>) -> Unit) =
+        viewModelScope.launch {
+            onResult(runCatching { backupManager.restoreBackup(blob, passphrase) })
+        }
 }

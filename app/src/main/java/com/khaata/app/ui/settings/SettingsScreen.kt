@@ -3,6 +3,8 @@ package com.khaata.app.ui.settings
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import com.khaata.app.BuildConfig
 import com.khaata.app.data.export.ExportRange
@@ -72,6 +74,35 @@ fun SettingsScreen(
         }
     }
 
+    // Backup / restore state + Storage-Access-Framework launchers (no storage permission needed).
+    var backupPassphrase by remember { mutableStateOf(false) }
+    var restorePassphrase by remember { mutableStateOf(false) }
+    var pendingBackup by remember { mutableStateOf<ByteArray?>(null) }
+    var restoreBytes by remember { mutableStateOf<ByteArray?>(null) }
+
+    val createDoc = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream"),
+    ) { uri ->
+        val bytes = pendingBackup
+        pendingBackup = null
+        if (uri != null && bytes != null) {
+            runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } }
+                .onSuccess { Toast.makeText(context, "Backup saved", Toast.LENGTH_SHORT).show() }
+                .onFailure { Toast.makeText(context, "Couldn't save backup", Toast.LENGTH_SHORT).show() }
+        }
+    }
+    val openDoc = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            val bytes = runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+            if (bytes == null) {
+                Toast.makeText(context, "Couldn't read that file", Toast.LENGTH_SHORT).show()
+            } else {
+                restoreBytes = bytes
+                restorePassphrase = true
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -131,6 +162,21 @@ fun SettingsScreen(
                 title = "Export to CSV",
                 subtitle = "Pick a date range to share as a spreadsheet",
                 onClick = { showExport = true },
+            )
+        }
+
+        // Backup card — encrypted backup file you control; nothing is uploaded by the app.
+        SectionCard(title = "Backup") {
+            ClickableRow(
+                title = "Back up data",
+                subtitle = "Save an encrypted backup you can restore later",
+                onClick = { backupPassphrase = true },
+            )
+            HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
+            ClickableRow(
+                title = "Restore data",
+                subtitle = "Import transactions from a backup file",
+                onClick = { openDoc.launch(arrayOf("*/*")) },
             )
         }
 
@@ -242,6 +288,82 @@ fun SettingsScreen(
                 TextButton(onClick = { viewModel.setUserName(draft); editName = false }) { Text("Save") }
             },
             dismissButton = { TextButton(onClick = { editName = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (backupPassphrase) {
+        var pass by remember { mutableStateOf("") }
+        var confirm by remember { mutableStateOf("") }
+        val valid = pass.length >= 6 && pass == confirm
+        AlertDialog(
+            onDismissRequest = { backupPassphrase = false },
+            title = { Text("Set a backup passphrase") },
+            text = {
+                Column {
+                    Text(
+                        "You'll need this exact passphrase to restore on a new phone. It can't be recovered if forgotten — write it down.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(pass, { pass = it }, singleLine = true, label = { Text("Passphrase") }, modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(confirm, { confirm = it }, singleLine = true, label = { Text("Confirm passphrase") }, modifier = Modifier.fillMaxWidth())
+                    if (pass.isNotEmpty() && pass.length < 6) {
+                        Text("At least 6 characters.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = valid,
+                    onClick = {
+                        backupPassphrase = false
+                        viewModel.createBackup(pass.toCharArray()) { bytes ->
+                            if (bytes == null) {
+                                Toast.makeText(context, "Nothing to back up yet", Toast.LENGTH_SHORT).show()
+                            } else {
+                                pendingBackup = bytes
+                                createDoc.launch("khaata-backup.kbk")
+                            }
+                        }
+                    },
+                ) { Text("Continue") }
+            },
+            dismissButton = { TextButton(onClick = { backupPassphrase = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (restorePassphrase) {
+        var pass by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { restorePassphrase = false },
+            title = { Text("Enter backup passphrase") },
+            text = {
+                OutlinedTextField(pass, { pass = it }, singleLine = true, label = { Text("Passphrase") }, modifier = Modifier.fillMaxWidth())
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = pass.isNotEmpty(),
+                    onClick = {
+                        val bytes = restoreBytes
+                        restorePassphrase = false
+                        if (bytes != null) {
+                            viewModel.restoreBackup(bytes, pass.toCharArray()) { result ->
+                                result.fold(
+                                    onSuccess = { count ->
+                                        Toast.makeText(context, "Restored $count transactions", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onFailure = {
+                                        Toast.makeText(context, "Wrong passphrase or invalid file", Toast.LENGTH_SHORT).show()
+                                    },
+                                )
+                            }
+                        }
+                    },
+                ) { Text("Restore") }
+            },
+            dismissButton = { TextButton(onClick = { restorePassphrase = false }) { Text("Cancel") } },
         )
     }
 }
