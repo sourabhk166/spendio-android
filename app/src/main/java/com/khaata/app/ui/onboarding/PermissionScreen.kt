@@ -79,9 +79,9 @@ fun PermissionScreen(
 
         PrivacyBullet("Reads bank & UPI notifications to log spends as they happen.")
         Spacer(Modifier.height(10.dp))
-        PrivacyBullet("Everything stays on your phone — nothing is ever uploaded.")
+        PrivacyBullet("Your data lives on your phone. No ads, no tracking, no selling data.")
         Spacer(Modifier.height(10.dp))
-        PrivacyBullet("No account, no internet permission, no ads. Always private.")
+        PrivacyBullet("Optional backup is end-to-end encrypted — even we can't read it.")
 
         Spacer(Modifier.height(28.dp))
 

@@ -57,6 +57,7 @@ fun SettingsScreen(
 ) {
     val appLock by viewModel.appLockEnabled.collectAsStateWithLifecycle()
     val autoBackupEnabled by viewModel.autoBackupEnabled.collectAsStateWithLifecycle()
+    val driveConnected by viewModel.driveConnected.collectAsStateWithLifecycle()
     val sources by viewModel.sources.collectAsStateWithLifecycle()
     val userName by viewModel.userName.collectAsStateWithLifecycle()
     var confirmWipe by remember { mutableStateOf(false) }
@@ -66,6 +67,10 @@ fun SettingsScreen(
     var pickEndDate by remember { mutableStateOf(false) }
     var customStart by remember { mutableStateOf<Long?>(null) }
     var autoBackupPassphrase by remember { mutableStateOf(false) }
+    var driveOptions by remember { mutableStateOf(false) }
+    var driveSetPass by remember { mutableStateOf(false) }
+    var driveRestorePass by remember { mutableStateOf(false) }
+    var pendingDrivePass by remember { mutableStateOf<CharArray?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val runExport: (ExportRange) -> Unit = { range ->
@@ -104,6 +109,16 @@ fun SettingsScreen(
                 restoreBytes = bytes
                 restorePassphrase = true
             }
+        }
+    }
+    val driveSignIn = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        viewModel.onDriveSignIn(result.data, pendingDrivePass) { ok ->
+            pendingDrivePass = null
+            Toast.makeText(
+                context,
+                if (ok) "Connected — backed up to Google Drive" else "Couldn't connect Google Drive",
+                Toast.LENGTH_SHORT,
+            ).show()
         }
     }
 
@@ -182,13 +197,26 @@ fun SettingsScreen(
             }
             HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
             ClickableRow(
-                title = "Back up data",
+                title = "Google Drive backup",
+                subtitle = if (driveConnected) "Connected: ${viewModel.driveEmail() ?: "Google account"}"
+                           else "Encrypted backup to your Google Drive",
+                onClick = {
+                    when {
+                        driveConnected -> driveOptions = true
+                        viewModel.hasBackupPassphrase() -> { pendingDrivePass = null; driveSignIn.launch(viewModel.driveSignInIntent()) }
+                        else -> driveSetPass = true
+                    }
+                },
+            )
+            HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
+            ClickableRow(
+                title = "Back up to a file",
                 subtitle = "Save an encrypted backup you can restore later",
                 onClick = { backupPassphrase = true },
             )
             HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
             ClickableRow(
-                title = "Restore data",
+                title = "Restore from a file",
                 subtitle = "Import transactions from a backup file",
                 onClick = { openDoc.launch(arrayOf("*/*")) },
             )
@@ -285,6 +313,88 @@ fun SettingsScreen(
                 ) { Text("Turn on") }
             },
             dismissButton = { TextButton(onClick = { autoBackupPassphrase = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (driveSetPass) {
+        var pass by remember { mutableStateOf("") }
+        var confirm by remember { mutableStateOf("") }
+        val valid = pass.length >= 6 && pass == confirm
+        AlertDialog(
+            onDismissRequest = { driveSetPass = false },
+            title = { Text("Set a backup passphrase") },
+            text = {
+                Column {
+                    Text(
+                        "Your Drive backup is encrypted with this. You'll need it to restore on a new phone, and it can't be recovered if forgotten.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(pass, { pass = it }, singleLine = true, label = { Text("Passphrase") }, modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(confirm, { confirm = it }, singleLine = true, label = { Text("Confirm passphrase") }, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = valid, onClick = {
+                    pendingDrivePass = pass.toCharArray()
+                    driveSetPass = false
+                    driveSignIn.launch(viewModel.driveSignInIntent())
+                }) { Text("Connect") }
+            },
+            dismissButton = { TextButton(onClick = { driveSetPass = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (driveOptions) {
+        AlertDialog(
+            onDismissRequest = { driveOptions = false },
+            title = { Text("Google Drive") },
+            text = {
+                Column {
+                    ExportOption("Back up now") {
+                        driveOptions = false
+                        viewModel.backupToDriveNow { ok ->
+                            Toast.makeText(context, if (ok) "Backed up to Drive" else "Backup failed", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    ExportOption("Restore from Drive") { driveOptions = false; driveRestorePass = true }
+                    ExportOption("Disconnect") {
+                        driveOptions = false
+                        viewModel.disconnectDrive()
+                        Toast.makeText(context, "Disconnected Google Drive", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { driveOptions = false }) { Text("Close") } },
+        )
+    }
+
+    if (driveRestorePass) {
+        var pass by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { driveRestorePass = false },
+            title = { Text("Restore from Drive") },
+            text = {
+                OutlinedTextField(pass, { pass = it }, singleLine = true, label = { Text("Backup passphrase") }, modifier = Modifier.fillMaxWidth())
+            },
+            confirmButton = {
+                TextButton(enabled = pass.isNotEmpty(), onClick = {
+                    driveRestorePass = false
+                    viewModel.restoreFromDrive(pass.toCharArray()) { result ->
+                        result.fold(
+                            onSuccess = { count ->
+                                val msg = if (count == 0) "No backup found in Drive" else "Restored $count transactions"
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            },
+                            onFailure = { Toast.makeText(context, "Wrong passphrase or no backup", Toast.LENGTH_SHORT).show() },
+                        )
+                    }
+                }) { Text("Restore") }
+            },
+            dismissButton = { TextButton(onClick = { driveRestorePass = false }) { Text("Cancel") } },
         )
     }
 

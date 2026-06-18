@@ -44,6 +44,41 @@ class SettingsViewModel @Inject constructor(
 
     fun disableAutoBackup() = viewModelScope.launch { autoBackup.disable() }
 
+    // ---- Google Drive ----
+
+    private val _driveConnected = kotlinx.coroutines.flow.MutableStateFlow(autoBackup.isDriveConnected())
+    val driveConnected: StateFlow<Boolean> = _driveConnected
+
+    fun driveEmail(): String? = autoBackup.driveEmail()
+    fun hasBackupPassphrase(): Boolean = autoBackup.hasPassphrase()
+    fun driveSignInIntent(): android.content.Intent = autoBackup.driveSignInClient().signInIntent
+
+    /** Handles the sign-in result; [passphrase] is the just-set one when first connecting. */
+    fun onDriveSignIn(data: android.content.Intent?, passphrase: CharArray?, onResult: (Boolean) -> Unit) =
+        viewModelScope.launch {
+            val ok = runCatching {
+                com.google.android.gms.auth.api.signin.GoogleSignIn
+                    .getSignedInAccountFromIntent(data)
+                    .getResult(com.google.android.gms.common.api.ApiException::class.java)
+                autoBackup.onDriveConnected(passphrase)
+            }.isSuccess
+            _driveConnected.value = autoBackup.isDriveConnected()
+            onResult(ok)
+        }
+
+    fun backupToDriveNow(onResult: (Boolean) -> Unit) = viewModelScope.launch {
+        onResult(runCatching { autoBackup.backupToDrive() }.isSuccess)
+    }
+
+    fun restoreFromDrive(passphrase: CharArray, onResult: (Result<Int>) -> Unit) = viewModelScope.launch {
+        onResult(runCatching { autoBackup.restoreFromDrive(passphrase) })
+    }
+
+    fun disconnectDrive() = viewModelScope.launch {
+        autoBackup.disconnectDrive()
+        _driveConnected.value = false
+    }
+
     val sources: StateFlow<List<SourceToggle>> =
         settings.disabledSources.map { disabled ->
             KnownSources.ALL.map { SourceToggle(it.packageName, it.displayName, it.packageName !in disabled) }
