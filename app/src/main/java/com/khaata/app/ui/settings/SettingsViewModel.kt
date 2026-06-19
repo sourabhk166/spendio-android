@@ -54,16 +54,23 @@ class SettingsViewModel @Inject constructor(
     fun driveSignInIntent(): android.content.Intent = autoBackup.driveSignInClient().signInIntent
 
     /** Handles the sign-in result; [passphrase] is the just-set one when first connecting. */
-    fun onDriveSignIn(data: android.content.Intent?, passphrase: CharArray?, onResult: (Boolean) -> Unit) =
+    fun onDriveSignIn(data: android.content.Intent?, passphrase: CharArray?, onResult: (Boolean, String?) -> Unit) =
         viewModelScope.launch {
+            var errMsg: String? = null
             val ok = runCatching {
                 com.google.android.gms.auth.api.signin.GoogleSignIn
                     .getSignedInAccountFromIntent(data)
                     .getResult(com.google.android.gms.common.api.ApiException::class.java)
                 autoBackup.onDriveConnected(passphrase)
+            }.onFailure { e ->
+                errMsg = when (e) {
+                    is com.google.android.gms.common.api.ApiException ->
+                        "code ${e.statusCode}${if (e.statusCode == 10) " — Google Cloud setup needed" else ""}"
+                    else -> e.message ?: "unknown error"
+                }
             }.isSuccess
             _driveConnected.value = autoBackup.isDriveConnected()
-            onResult(ok)
+            onResult(ok, errMsg)
         }
 
     fun backupToDriveNow(onResult: (Boolean) -> Unit) = viewModelScope.launch {

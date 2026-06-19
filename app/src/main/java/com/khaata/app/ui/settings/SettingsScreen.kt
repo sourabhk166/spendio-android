@@ -112,12 +112,13 @@ fun SettingsScreen(
         }
     }
     val driveSignIn = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        viewModel.onDriveSignIn(result.data, pendingDrivePass) { ok ->
+        viewModel.onDriveSignIn(result.data, pendingDrivePass) { ok, errMsg ->
             pendingDrivePass = null
             Toast.makeText(
                 context,
-                if (ok) "Connected — backed up to Google Drive" else "Couldn't connect Google Drive",
-                Toast.LENGTH_SHORT,
+                if (ok) "Connected — backed up to Google Drive"
+                else "Couldn't connect Google Drive${errMsg?.let { ": $it" } ?: ""}",
+                Toast.LENGTH_LONG,
             ).show()
         }
     }
@@ -419,6 +420,8 @@ fun SettingsScreen(
     if (pickStartDate) {
         SingleDateDialog(
             title = "Start date",
+            maxDateMillis = System.currentTimeMillis(),
+            buttonLabel = "Next",
             onDismiss = { pickStartDate = false },
             onPick = { millis -> customStart = millis; pickStartDate = false; pickEndDate = true },
         )
@@ -427,14 +430,13 @@ fun SettingsScreen(
     if (pickEndDate) {
         SingleDateDialog(
             title = "End date",
+            minDateMillis = customStart ?: 0L,
+            maxDateMillis = System.currentTimeMillis(),
+            buttonLabel = "Export",
             onDismiss = { pickEndDate = false },
             onPick = { end ->
                 pickEndDate = false
-                val start = customStart ?: 0L
-                // Order-proof, and extend the end to end-of-day so the last day is inclusive.
-                val from = minOf(start, end)
-                val to = maxOf(start, end) + 86_399_999L
-                runExport(ExportRange.Custom(from, to))
+                runExport(ExportRange.Custom(customStart ?: 0L, end + 86_399_999L))
             },
         )
     }
@@ -577,19 +579,39 @@ private fun ExportOption(label: String, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SingleDateDialog(title: String, onDismiss: () -> Unit, onPick: (Long) -> Unit) {
-    val state = rememberDatePickerState()
+private fun SingleDateDialog(
+    title: String,
+    minDateMillis: Long = 0L,
+    maxDateMillis: Long = System.currentTimeMillis(),
+    buttonLabel: String = "Next",
+    onDismiss: () -> Unit,
+    onPick: (Long) -> Unit,
+) {
+    val selectableDates = remember(minDateMillis, maxDateMillis) {
+        object : androidx.compose.material3.SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) =
+                utcTimeMillis in minDateMillis..maxDateMillis
+        }
+    }
+    val state = rememberDatePickerState(
+        initialDisplayMode = androidx.compose.material3.DisplayMode.Input,
+        selectableDates = selectableDates,
+    )
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
-                enabled = state.selectedDateMillis != null,
+                enabled = state.selectedDateMillis?.let { it in minDateMillis..maxDateMillis } == true,
                 onClick = { state.selectedDateMillis?.let(onPick) },
-            ) { Text("Next") }
+            ) { Text(buttonLabel) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     ) {
-        DatePicker(state = state, title = { Text(title, modifier = Modifier.padding(start = 24.dp, top = 16.dp)) })
+        DatePicker(
+            state = state,
+            showModeToggle = true,
+            title = { Text(title, modifier = Modifier.padding(start = 24.dp, top = 16.dp)) },
+        )
     }
 }
 
