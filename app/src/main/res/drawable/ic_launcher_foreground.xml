@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Spendio adaptive-icon foreground: a solid white ₹ glyph, built from filled shapes (not thin
-  strokes) so it reads crisply at every launcher size and as the Android-12 splash icon.
-  Drawn inside the inner ~66dp circle so the splash mask never clips it. Safe zone for the
-  adaptive icon is the central 72×72dp of this 108×108dp canvas.
+  Spendio adaptive-icon foreground — the "Flow" monogram. A single S whose top half flows
+  teal (money in) into an amber bottom half (money out); the two round-capped strokes meet
+  tangent-to-tangent at the centre, so it reads as one continuous ribbon. Sized to sit inside
+  the central ~72dp safe zone of this 108×108dp canvas, so no launcher mask (circle, squircle,
+  rounded-square) ever clips it. Also serves as the Android-12 splash icon.
 
-  Glyph = two horizontal bars + a right loop stem + a diagonal leg (the ₹ signature).
+  Drawn as strokes (not a filled outline) on purpose: a stroke with a gradient is unsupported
+  on some renderers, so the two-tone effect is two solid-coloured stroke paths instead.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -14,10 +16,19 @@
     android:viewportHeight="108">
 
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M38,28 H68 V34.5 H38 Z
-                          M38,40 H68 V46.5 H38 Z
-                          M61,28 H68 V46.5 H61 Z
-                          M40,46.5 H48 L66,80 H58 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#2FCB9B"
+        android:strokeWidth="12.3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M66.67,37.84 C66.67,33.47 59.68,30.85 54,30.85 C46.14,30.85 40.02,35.65 40.02,42.64 C40.02,48.76 45.26,51.82 54,54" />
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFB84D"
+        android:strokeWidth="12.3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,54 C62.74,56.18 67.98,59.24 67.98,65.36 C67.98,72.35 62.30,77.15 54,77.15 C48.32,77.15 41.33,74.97 41.33,70.16" />
 
 </vector>

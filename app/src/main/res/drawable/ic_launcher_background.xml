@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Adaptive-icon background: a subtle vertical teal gradient (lighter top → deeper bottom)
-  for a bit of depth versus a flat fill. The splash window background stays the solid mid
-  teal (#1D9E75, set in themes.xml) which sits between these two stops.
+  Adaptive-icon background for the "Flow" mark: a deep-teal vertical gradient (lighter top →
+  near-black bottom) that makes the teal→amber S pop. The splash window background (themes.xml)
+  is the solid mid value #0C4D3A, which sits between these two stops so the icon and the splash
+  feel like one surface.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
@@ -19,8 +20,8 @@
                 android:startY="0"
                 android:endX="0"
                 android:endY="108"
-                android:startColor="#21B083"
-                android:endColor="#168A66" />
+                android:startColor="#0E5740"
+                android:endColor="#08382B" />
         </aapt:attr>
     </path>
 

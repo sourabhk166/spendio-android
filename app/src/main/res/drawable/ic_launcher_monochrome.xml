@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Monochrome layer for Android-13+ themed ("Material You") icons. The system ignores these
+  colours and tints the whole shape to match the user's wallpaper, so the two-tone teal/amber
+  collapses to one flat S. Same geometry and safe-zone sizing as the foreground.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="12.3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M66.67,37.84 C66.67,33.47 59.68,30.85 54,30.85 C46.14,30.85 40.02,35.65 40.02,42.64 C40.02,48.76 45.26,51.82 54,54" />
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="12.3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,54 C62.74,56.18 67.98,59.24 67.98,65.36 C67.98,72.35 62.30,77.15 54,77.15 C48.32,77.15 41.33,74.97 41.33,70.16" />
+
+</vector>

@@ -17,6 +17,7 @@ import com.spendio.app.ui.lock.AppLock
 import com.spendio.app.ui.lock.LockScreen
 import com.spendio.app.ui.onboarding.PermissionScreen
 import com.spendio.app.ui.onboarding.RestorePromptScreen
+import com.spendio.app.ui.splash.BrandedSplashScreen
 import com.spendio.app.ui.theme.SpendioTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -34,6 +35,7 @@ class MainActivity : FragmentActivity() {
     private val locked = mutableStateOf(false)
     private val offerRestore = mutableStateOf(false)
     private val restoreError = mutableStateOf(false)
+    private val showBrandedSplash = mutableStateOf(true)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -43,6 +45,7 @@ class MainActivity : FragmentActivity() {
         setContent {
             SpendioTheme {
                 when {
+                    showBrandedSplash.value -> BrandedSplashScreen(onFinished = { showBrandedSplash.value = false })
                     offerRestore.value -> RestorePromptScreen(
                         error = restoreError.value,
                         onRestore = ::restoreFromBackup,

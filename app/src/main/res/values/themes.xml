@@ -12,7 +12,7 @@
       transitions to Theme.Spendio once the first Compose frame is ready.
     -->
     <style name="Theme.Spendio.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#1D9E75</item>
+        <item name="windowSplashScreenBackground">#0C4D3A</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="postSplashScreenTheme">@style/Theme.Spendio</item>
     </style>
