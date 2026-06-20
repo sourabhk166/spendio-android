@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.khaata.app"
+    namespace = "com.spendio.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.khaata.app"
+        applicationId = "com.spendio.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

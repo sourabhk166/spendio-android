@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Khaata adaptive-icon foreground: a solid white ₹ glyph, built from filled shapes (not thin
+  Spendio adaptive-icon foreground: a solid white ₹ glyph, built from filled shapes (not thin
   strokes) so it reads crisply at every launcher size and as the Android-12 splash icon.
   Drawn inside the inner ~66dp circle so the splash mask never clips it. Safe zone for the
   adaptive icon is the central 72×72dp of this 108×108dp canvas.

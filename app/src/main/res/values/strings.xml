@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Khaata</string>
-    <string name="capture_service_label">Khaata transaction capture</string>
+    <string name="app_name">Spendio</string>
+    <string name="capture_service_label">Spendio transaction capture</string>
 </resources>

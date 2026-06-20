@@ -5,15 +5,15 @@
       All real theming is done in Compose (ui/theme/Theme.kt). Parenting on a
       platform theme avoids a dependency on the Material XML components library.
     -->
-    <style name="Theme.Khaata" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Spendio" parent="android:Theme.Material.Light.NoActionBar" />
 
     <!--
       Splash screen theme. The activity starts with this theme; installSplashScreen()
-      transitions to Theme.Khaata once the first Compose frame is ready.
+      transitions to Theme.Spendio once the first Compose frame is ready.
     -->
-    <style name="Theme.Khaata.Starting" parent="Theme.SplashScreen">
+    <style name="Theme.Spendio.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#1D9E75</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="postSplashScreenTheme">@style/Theme.Khaata</item>
+        <item name="postSplashScreenTheme">@style/Theme.Spendio</item>
     </style>
 </resources>
