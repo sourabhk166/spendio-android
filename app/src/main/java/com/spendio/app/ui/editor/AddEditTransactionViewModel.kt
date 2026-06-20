@@ -51,15 +51,22 @@ class AddEditTransactionViewModel @Inject constructor(
 
     private var existing: Transaction? = null
     private var loadedFor: String? = null
+    private var sessionLoaded = false
 
     /**
      * Populates the form for [txnId] (edit) or resets to blank defaults (new). This VM is
      * Activity-scoped, so the *same* instance is reused across editor sessions — every call
      * must fully (re)set state, never assume a fresh instance. Re-keyed by [txnId] so the
      * caller can reopen the editor for a different target and get the right content.
+     *
+     * [sessionLoaded] (cleared by [reset] when the screen closes) is what actually guards
+     * against wiping in-progress input on a same-session recomposition (e.g. rotation) —
+     * [loadedFor] alone can't tell "still editing this" apart from "closed and reopened for
+     * a new entry", since both look like txnId == null.
      */
     fun load(txnId: String?) {
-        if (loadedFor == txnId && (txnId == null || existing?.id == txnId)) return
+        if (sessionLoaded && loadedFor == txnId && (txnId == null || existing?.id == txnId)) return
+        sessionLoaded = true
         loadedFor = txnId
         if (txnId == null) {
             existing = null
@@ -170,6 +177,12 @@ class AddEditTransactionViewModel @Inject constructor(
             repository.delete(current)
             onDone()
         }
+    }
+
+    /** Call when the editor screen closes (back, save, or delete) so the next [load] for a
+     * fresh session isn't short-circuited by state left over from this visit. */
+    fun reset() {
+        sessionLoaded = false
     }
 }
 

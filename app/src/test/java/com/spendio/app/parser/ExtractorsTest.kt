@@ -102,4 +102,16 @@ class MerchantExtractorTest {
     @Test fun `at merchant`() {
         assertEquals("Amazon", MerchantExtractor.extract("Rs.899 spent at Amazon on 14-06"))
     }
+
+    @Test fun `from person name on an incoming credit`() {
+        assertEquals(
+            "Arjun Mehta",
+            MerchantExtractor.extract("Acct XX207 is credited with Rs 10000.00 on 11-Jun-25 from Arjun Mehta. UPI:300000000103-ICICI Bank."),
+        )
+        assertEquals("RAHUL SHARMA", MerchantExtractor.extract("Rs.500 received from RAHUL SHARMA via UPI Ref 123456789012"))
+    }
+
+    @Test fun `lowercase prose after from is not mistaken for a name`() {
+        assertNull(MerchantExtractor.extract("Payment of Rs.300 from your account was debited successfully"))
+    }
 }

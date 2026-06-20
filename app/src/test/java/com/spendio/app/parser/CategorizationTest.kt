@@ -2,6 +2,7 @@ package com.spendio.app.parser
 
 import com.spendio.app.ai.NoOpAiEngine
 import com.spendio.app.domain.model.Categories
+import com.spendio.app.domain.model.Direction
 import com.spendio.app.domain.repository.RuleRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -69,12 +70,26 @@ class CategorizerTest {
         assertEquals(Categories.UNCATEGORIZED, c.categorize("Xyzacme").categoryId)
     }
 
-    @Test fun `two-word person name is UPI and flagged for review`() = runTest {
+    @Test fun `outgoing person name with unclear method is Transfers and flagged for review`() = runTest {
         val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
-        val rahul = c.categorize("RAHUL SHARMA")
-        assertEquals(Categories.UPI, rahul.categoryId)
+        val rahul = c.categorize("RAHUL SHARMA", direction = Direction.DEBIT, isConfirmedUpi = false)
+        assertEquals(Categories.TRANSFERS, rahul.categoryId)
         assertTrue("P2P person payments must be surfaced for review", rahul.needsReview)
-        assertEquals(Categories.UPI, c.categorize("Karan Malhotra").categoryId)
+        assertEquals(Categories.TRANSFERS, c.categorize("Karan Malhotra").categoryId)
+    }
+
+    @Test fun `outgoing person name confirmed via upi is tagged UPI`() = runTest {
+        val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
+        val rahul = c.categorize("RAHUL SHARMA", direction = Direction.DEBIT, isConfirmedUpi = true)
+        assertEquals(Categories.UPI, rahul.categoryId)
+        assertTrue(rahul.needsReview)
+    }
+
+    @Test fun `incoming person name is Payback and flagged for review`() = runTest {
+        val c = Categorizer(MapRuleRepository(), NoOpAiEngine, MerchantNormalizer())
+        val rahul = c.categorize("RAHUL SHARMA", direction = Direction.CREDIT, isConfirmedUpi = true)
+        assertEquals(Categories.INCOME_PAYBACK, rahul.categoryId)
+        assertTrue(rahul.needsReview)
     }
 
     @Test fun `known brand two-word name is not mistaken for a person`() = runTest {

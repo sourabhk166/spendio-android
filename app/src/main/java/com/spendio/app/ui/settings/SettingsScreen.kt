@@ -25,7 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -35,7 +35,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,8 +45,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spendio.app.ui.AutoSizeText
+
+// Guards the PBKDF2-derived backup encryption key from trivially short passphrases.
+private const val MIN_PASSPHRASE_LENGTH = 8
 
 @Composable
 fun SettingsScreen(
@@ -63,9 +68,7 @@ fun SettingsScreen(
     var confirmWipe by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(false) }
     var showExport by remember { mutableStateOf(false) }
-    var pickStartDate by remember { mutableStateOf(false) }
-    var pickEndDate by remember { mutableStateOf(false) }
-    var customStart by remember { mutableStateOf<Long?>(null) }
+    var pickCustomRange by remember { mutableStateOf(false) }
     var autoBackupPassphrase by remember { mutableStateOf(false) }
     var driveOptions by remember { mutableStateOf(false) }
     var driveSetPass by remember { mutableStateOf(false) }
@@ -272,7 +275,12 @@ fun SettingsScreen(
             text = { Text("This erases everything Spendio has stored on this device. This cannot be undone.") },
             confirmButton = {
                 TextButton(
-                    onClick = { viewModel.wipeAll(); confirmWipe = false },
+                    onClick = {
+                        viewModel.wipeAll {
+                            Toast.makeText(context, "All data deleted", Toast.LENGTH_SHORT).show()
+                        }
+                        confirmWipe = false
+                    },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) { Text("Delete") }
             },
@@ -283,7 +291,7 @@ fun SettingsScreen(
     if (autoBackupPassphrase) {
         var pass by remember { mutableStateOf("") }
         var confirm by remember { mutableStateOf("") }
-        val valid = pass.length >= 6 && pass == confirm
+        val valid = pass.length >= MIN_PASSPHRASE_LENGTH && pass == confirm
         AlertDialog(
             onDismissRequest = { autoBackupPassphrase = false },
             title = { Text("Turn on automatic backup") },
@@ -298,8 +306,8 @@ fun SettingsScreen(
                     OutlinedTextField(pass, { pass = it }, singleLine = true, label = { Text("Passphrase") }, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(confirm, { confirm = it }, singleLine = true, label = { Text("Confirm passphrase") }, modifier = Modifier.fillMaxWidth())
-                    if (pass.isNotEmpty() && pass.length < 6) {
-                        Text("At least 6 characters.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    if (pass.isNotEmpty() && pass.length < MIN_PASSPHRASE_LENGTH) {
+                        Text("At least $MIN_PASSPHRASE_LENGTH characters.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                     }
                 }
             },
@@ -320,7 +328,7 @@ fun SettingsScreen(
     if (driveSetPass) {
         var pass by remember { mutableStateOf("") }
         var confirm by remember { mutableStateOf("") }
-        val valid = pass.length >= 6 && pass == confirm
+        val valid = pass.length >= MIN_PASSPHRASE_LENGTH && pass == confirm
         AlertDialog(
             onDismissRequest = { driveSetPass = false },
             title = { Text("Set a backup passphrase") },
@@ -335,6 +343,9 @@ fun SettingsScreen(
                     OutlinedTextField(pass, { pass = it }, singleLine = true, label = { Text("Passphrase") }, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(confirm, { confirm = it }, singleLine = true, label = { Text("Confirm passphrase") }, modifier = Modifier.fillMaxWidth())
+                    if (pass.isNotEmpty() && pass.length < MIN_PASSPHRASE_LENGTH) {
+                        Text("At least $MIN_PASSPHRASE_LENGTH characters.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    }
                 }
             },
             confirmButton = {
@@ -409,7 +420,7 @@ fun SettingsScreen(
                     ExportOption("Last 3 months") { showExport = false; runExport(ExportRange.Last3Months) }
                     ExportOption("This year") { showExport = false; runExport(ExportRange.ThisYear) }
                     ExportOption("All time") { showExport = false; runExport(ExportRange.AllTime) }
-                    ExportOption("Custom range…") { showExport = false; pickStartDate = true }
+                    ExportOption("Custom range…") { showExport = false; pickCustomRange = true }
                 }
             },
             confirmButton = {},
@@ -417,26 +428,12 @@ fun SettingsScreen(
         )
     }
 
-    if (pickStartDate) {
-        SingleDateDialog(
-            title = "Start date",
-            maxDateMillis = System.currentTimeMillis(),
-            buttonLabel = "Next",
-            onDismiss = { pickStartDate = false },
-            onPick = { millis -> customStart = millis; pickStartDate = false; pickEndDate = true },
-        )
-    }
-
-    if (pickEndDate) {
-        SingleDateDialog(
-            title = "End date",
-            minDateMillis = customStart ?: 0L,
-            maxDateMillis = System.currentTimeMillis(),
-            buttonLabel = "Export",
-            onDismiss = { pickEndDate = false },
-            onPick = { end ->
-                pickEndDate = false
-                runExport(ExportRange.Custom(customStart ?: 0L, end + 86_399_999L))
+    if (pickCustomRange) {
+        CustomRangeDialog(
+            onDismiss = { pickCustomRange = false },
+            onPick = { start, end ->
+                pickCustomRange = false
+                runExport(ExportRange.Custom(start, end + 86_399_999L))
             },
         )
     }
@@ -473,7 +470,7 @@ fun SettingsScreen(
     if (backupPassphrase) {
         var pass by remember { mutableStateOf("") }
         var confirm by remember { mutableStateOf("") }
-        val valid = pass.length >= 6 && pass == confirm
+        val valid = pass.length >= MIN_PASSPHRASE_LENGTH && pass == confirm
         AlertDialog(
             onDismissRequest = { backupPassphrase = false },
             title = { Text("Set a backup passphrase") },
@@ -488,8 +485,8 @@ fun SettingsScreen(
                     OutlinedTextField(pass, { pass = it }, singleLine = true, label = { Text("Passphrase") }, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(confirm, { confirm = it }, singleLine = true, label = { Text("Confirm passphrase") }, modifier = Modifier.fillMaxWidth())
-                    if (pass.isNotEmpty() && pass.length < 6) {
-                        Text("At least 6 characters.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    if (pass.isNotEmpty() && pass.length < MIN_PASSPHRASE_LENGTH) {
+                        Text("At least $MIN_PASSPHRASE_LENGTH characters.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                     }
                 }
             },
@@ -579,39 +576,59 @@ private fun ExportOption(label: String, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SingleDateDialog(
-    title: String,
-    minDateMillis: Long = 0L,
-    maxDateMillis: Long = System.currentTimeMillis(),
-    buttonLabel: String = "Next",
+private fun CustomRangeDialog(
     onDismiss: () -> Unit,
-    onPick: (Long) -> Unit,
+    onPick: (start: Long, end: Long) -> Unit,
 ) {
-    val selectableDates = remember(minDateMillis, maxDateMillis) {
-        object : androidx.compose.material3.SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) =
-                utcTimeMillis in minDateMillis..maxDateMillis
-        }
-    }
-    val state = rememberDatePickerState(
-        initialDisplayMode = androidx.compose.material3.DisplayMode.Input,
-        selectableDates = selectableDates,
+    // Single dialog, pick start then end on the same calendar — the standard date-range
+    // picker pattern (same one Google's own apps use), instead of two separate dialogs.
+    val state = rememberDateRangePickerState(
+        initialDisplayMode = androidx.compose.material3.DisplayMode.Picker,
+        yearRange = 2000..java.time.Year.now().value,
     )
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
-                enabled = state.selectedDateMillis?.let { it in minDateMillis..maxDateMillis } == true,
-                onClick = { state.selectedDateMillis?.let(onPick) },
-            ) { Text(buttonLabel) }
+                enabled = state.selectedStartDateMillis != null && state.selectedEndDateMillis != null,
+                onClick = {
+                    val start = state.selectedStartDateMillis
+                    val end = state.selectedEndDateMillis
+                    if (start != null && end != null) onPick(start, end)
+                },
+            ) { Text("Export") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     ) {
-        DatePicker(
+        DateRangePicker(
             state = state,
-            showModeToggle = true,
-            title = { Text(title, modifier = Modifier.padding(start = 24.dp, top = 16.dp)) },
+            modifier = Modifier.height(500.dp),
+            title = { Text("Select range", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) },
+            headline = {
+                // Default M3 headline wraps mid-phrase ("23 Jun 2026 -\n25 Jun 2026") on
+                // devices with a larger system font scale (e.g. Samsung One UI). Force it to
+                // one line and shrink instead, so it never looks broken.
+                AutoSizeText(
+                    text = rangeHeadline(state.selectedStartDateMillis, state.selectedEndDateMillis),
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp),
+                )
+            },
         )
+    }
+}
+
+private fun rangeHeadline(startMillis: Long?, endMillis: Long?): String {
+    fun fmt(millis: Long): String =
+        java.time.Instant.ofEpochMilli(millis)
+            .atZone(java.time.ZoneOffset.UTC)
+            .toLocalDate()
+            .format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy"))
+    return when {
+        startMillis != null && endMillis != null -> "${fmt(startMillis)} – ${fmt(endMillis)}"
+        startMillis != null -> "${fmt(startMillis)} – End date"
+        else -> "Start date – End date"
     }
 }
 

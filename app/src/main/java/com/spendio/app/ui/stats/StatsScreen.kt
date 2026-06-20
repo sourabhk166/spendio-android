@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +29,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +39,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,9 +47,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spendio.app.domain.model.CategorySlice
 import com.spendio.app.domain.model.Money
+import com.spendio.app.ui.AutoSizeText
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlin.math.atan2
+import kotlin.math.hypot
 
 @Composable
 fun StatsScreen(
@@ -169,7 +176,7 @@ private fun ModeToggle(mode: StatsMode, onSelect: (StatsMode) -> Unit) {
         ToggleSegment("Income", selected = mode == StatsMode.INCOME, modifier = Modifier.weight(1f)) {
             onSelect(StatsMode.INCOME)
         }
-        ToggleSegment("Invest", selected = mode == StatsMode.INVEST, modifier = Modifier.weight(1f)) {
+        ToggleSegment("Investments", selected = mode == StatsMode.INVEST, modifier = Modifier.weight(1f)) {
             onSelect(StatsMode.INVEST)
         }
     }
@@ -187,12 +194,38 @@ private fun ToggleSegment(label: String, selected: Boolean, modifier: Modifier =
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = fg)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = fg,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
     }
 }
 
+/** A slice's pre-computed [startAngle]/[sweepAngle] in drawArc's convention (0°=3 o'clock,
+ * clockwise-positive, chart starts at -90°=12 o'clock) — shared by drawing and hit-testing. */
+private data class SliceArc(val slice: CategorySlice, val startAngle: Float, val sweepAngle: Float)
+
+private fun List<CategorySlice>.toArcs(): List<SliceArc> {
+    var start = -90f
+    return map { slice ->
+        val sweep = slice.fraction.coerceIn(0f, 1f) * 360f
+        SliceArc(slice, start, sweep).also { start += sweep }
+    }
+}
+
+// Canvas is 180.dp with a 30.dp stroke, so the open hole is 120.dp across; this trims a
+// little off that for breathing room so center text never touches the ring.
+private val DonutHoleWidth = 108.dp
+
 @Composable
 private fun DonutCard(slices: List<CategorySlice>, total: Money, caption: String) {
+    val arcs = remember(slices) { slices.toArcs() }
+    var selected by remember(slices) { mutableStateOf<CategorySlice?>(null) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -206,7 +239,29 @@ private fun DonutCard(slices: List<CategorySlice>, total: Money, caption: String
             contentAlignment = Alignment.Center,
         ) {
             val ringTrack = MaterialTheme.colorScheme.surfaceVariant
-            Canvas(modifier = Modifier.size(180.dp)) {
+            Canvas(
+                modifier = Modifier
+                    .size(180.dp)
+                    .pointerInput(arcs) {
+                        detectTapGestures { offset ->
+                            val stroke = 30.dp.toPx()
+                            val center = Offset(size.width / 2f, size.height / 2f)
+                            val dx = offset.x - center.x
+                            val dy = offset.y - center.y
+                            val radius = hypot(dx, dy)
+                            val outerRadius = size.width / 2f
+                            val innerRadius = outerRadius - stroke
+                            if (radius < innerRadius || radius > outerRadius) {
+                                selected = null
+                                return@detectTapGestures
+                            }
+                            var angle = Math.toDegrees(atan2(dy, dx).toDouble()).toFloat()
+                            if (angle < -90f) angle += 360f
+                            val hit = arcs.firstOrNull { angle >= it.startAngle && angle < it.startAngle + it.sweepAngle }
+                            selected = hit?.slice?.takeIf { it != selected }
+                        }
+                    },
+            ) {
                 val stroke = 30.dp.toPx()
                 val inset = stroke / 2
                 val arcSize = Size(size.width - stroke, size.height - stroke)
@@ -220,33 +275,71 @@ private fun DonutCard(slices: List<CategorySlice>, total: Money, caption: String
                     size = arcSize,
                     style = Stroke(width = stroke),
                 )
-                var start = -90f
-                slices.forEach { slice ->
-                    val sweep = slice.fraction.coerceIn(0f, 1f) * 360f
+                arcs.forEach { arc ->
                     drawArc(
-                        color = slice.colorHex.toColor(),
-                        startAngle = start,
-                        sweepAngle = sweep,
+                        color = arc.slice.colorHex.toColor(),
+                        startAngle = arc.startAngle,
+                        sweepAngle = arc.sweepAngle,
                         useCenter = false,
                         topLeft = topLeft,
                         size = arcSize,
                         style = Stroke(width = stroke),
                     )
-                    start += sweep
+                }
+                // Highlight the tapped slice by redrawing it thicker, like a "pop out" ring.
+                selected?.let { sel ->
+                    arcs.firstOrNull { it.slice.categoryId == sel.categoryId }?.let { arc ->
+                        drawArc(
+                            color = arc.slice.colorHex.toColor(),
+                            startAngle = arc.startAngle,
+                            sweepAngle = arc.sweepAngle,
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = arcSize,
+                            style = Stroke(width = stroke + 10.dp.toPx()),
+                        )
+                    }
                 }
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = caption,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = total.format(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
+            val sel = selected
+            if (sel != null) {
+                // Tooltip-style center content for the tapped slice — tap it again (or the
+                // chart's empty center) to go back to the total. Width is capped to the donut's
+                // hole (DonutHoleWidth) and the amount auto-shrinks so a large figure never
+                // overlaps the ring instead of just overflowing it.
+                Column(modifier = Modifier.width(DonutHoleWidth), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(sel.emoji, style = MaterialTheme.typography.headlineSmall)
+                    Spacer(Modifier.height(2.dp))
+                    AutoSizeText(
+                        text = sel.name,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    AutoSizeText(
+                        text = sel.amount.format(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "${sel.percent}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                Column(modifier = Modifier.width(DonutHoleWidth), horizontalAlignment = Alignment.CenterHorizontally) {
+                    AutoSizeText(
+                        text = caption,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    AutoSizeText(
+                        text = total.format(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
         }
     }

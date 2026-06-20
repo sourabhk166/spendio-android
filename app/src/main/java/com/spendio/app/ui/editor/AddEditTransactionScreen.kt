@@ -79,9 +79,10 @@ fun AddEditTransactionScreen(
     LaunchedEffect(txnId) { viewModel.load(txnId) }
     val form by viewModel.form.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
+    val close: () -> Unit = { viewModel.reset(); onClose() }
 
     // System back should return to the tab we came from, not exit the app.
-    BackHandler { onClose() }
+    BackHandler { close() }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -94,13 +95,13 @@ fun AddEditTransactionScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onClose) {
+                    IconButton(onClick = close) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
                     if (form.canDelete) {
-                        IconButton(onClick = { viewModel.delete(onClose) }) {
+                        IconButton(onClick = { viewModel.delete(close) }) {
                             Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
                         }
                     }
@@ -176,7 +177,7 @@ fun AddEditTransactionScreen(
             Spacer(Modifier.height(8.dp))
 
             Button(
-                onClick = { viewModel.save(onClose) },
+                onClick = { viewModel.save(close) },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = FieldShape,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),

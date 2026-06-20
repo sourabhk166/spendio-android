@@ -7,6 +7,7 @@ import com.spendio.app.domain.model.Direction
 import com.spendio.app.domain.model.RawNotification
 import com.spendio.app.domain.model.Transaction
 import com.spendio.app.domain.repository.TransactionRepository
+import com.spendio.app.parser.Categorization
 import com.spendio.app.parser.Categorizer
 import com.spendio.app.parser.MerchantNormalizer
 import com.spendio.app.parser.SourceFilter
@@ -57,11 +58,19 @@ class CapturePipeline @Inject constructor(
 
         if (parsed == null || !parsed.isComplete) return CaptureOutcome.NotParsed
 
-        var categorization = categorizer.categorize(parsed.rawMerchant)
-        // Self-transfer: a person-to-person UPI where the other party is the user themselves
-        // (paying your own account). Re-route from UPI (counts as spend) to Transfers (excluded).
-        if (categorization.categoryId == Categories.UPI && isSelfTransfer(parsed.rawMerchant)) {
-            categorization = categorization.copy(categoryId = Categories.TRANSFERS)
+        var categorization = categorizer.categorize(
+            rawMerchant = parsed.rawMerchant,
+            direction = parsed.direction ?: Direction.DEBIT,
+            isConfirmedUpi = isConfirmedUpi(parsed.rawMerchant, raw.content),
+        )
+        // Self-transfer: a person-to-person payment where the other party is the user
+        // themselves (paying your own account). Re-route from whatever P2P bucket it landed
+        // in (UPI / Transfers / Payback — all count as spend/income) to Self Transfer
+        // (excluded). Both directions can fire it (one self-transfer often arrives as two
+        // notifications, a debit and a credit), so it always needs the user's eyes in Review.
+        val p2pBuckets = setOf(Categories.UPI, Categories.TRANSFERS, Categories.INCOME_PAYBACK)
+        if (categorization.categoryId in p2pBuckets && isSelfTransfer(parsed.rawMerchant)) {
+            categorization = Categorization(Categories.SELF_TRANSFER, needsReview = true)
         }
         // Money coming IN that we couldn't categorize is worth a glance — it could be income,
         // a repayment, or a gift, and only the user knows. Surface it for review rather than
@@ -84,5 +93,13 @@ class CapturePipeline @Inject constructor(
         val userName = normalizer.normalize(userNameSource.current()) ?: return false
         val party = normalizer.normalize(rawMerchant) ?: return false
         return party == userName
+    }
+
+    /** True when the notification gives a clear signal the payment moved via UPI specifically
+     * (a VPA handle in the merchant string, or the literal word "UPI" in the text) — as opposed
+     * to a P2P payment whose rail (UPI / IMPS / NEFT) we can't actually tell from the text. */
+    private fun isConfirmedUpi(rawMerchant: String?, content: String?): Boolean {
+        if (rawMerchant?.contains('@') == true) return true
+        return content?.contains("upi", ignoreCase = true) == true
     }
 }

@@ -83,13 +83,30 @@ class CapturePipelineTest {
         assertTrue("P2P payment must be surfaced for review", txn.needsReview)
     }
 
-    @Test fun `self-transfer is re-routed to Transfers when the name matches the user`() = runTest {
+    @Test fun `self-transfer is re-routed to Self Transfer when the name matches the user`() = runTest {
         userName = "Arjun Mehta"
         val outcome = pipeline.process(raw("Rs.5000 sent to ARJUN MEHTA via UPI Ref 998877665544"))
         assertTrue(outcome is CaptureOutcome.Saved)
         val txn = repo.inserted.first()
-        // Paying your own account → Transfers (excluded from spend), still flagged for review.
+        // Paying your own account → Self Transfer (excluded from spend), still flagged for review.
+        assertEquals(com.spendio.app.domain.model.Categories.SELF_TRANSFER, txn.categoryId)
+        assertTrue(txn.needsReview)
+    }
+
+    @Test fun `outgoing person payment with no UPI signal lands in Transfers`() = runTest {
+        // No "UPI" keyword and no '@' VPA in the merchant — the rail is genuinely unclear.
+        val outcome = pipeline.process(raw("Rs.500 sent to RAHUL SHARMA Ref 123456789012"))
+        assertTrue(outcome is CaptureOutcome.Saved)
+        val txn = repo.inserted.first()
         assertEquals(com.spendio.app.domain.model.Categories.TRANSFERS, txn.categoryId)
+        assertTrue(txn.needsReview)
+    }
+
+    @Test fun `incoming person payment is categorized Payback and flagged for review`() = runTest {
+        val outcome = pipeline.process(raw("Rs.500 received from RAHUL SHARMA via UPI Ref 123456789012"))
+        assertTrue(outcome is CaptureOutcome.Saved)
+        val txn = repo.inserted.first()
+        assertEquals(com.spendio.app.domain.model.Categories.INCOME_PAYBACK, txn.categoryId)
         assertTrue(txn.needsReview)
     }
 

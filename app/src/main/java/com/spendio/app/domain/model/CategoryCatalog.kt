@@ -20,6 +20,7 @@ object CategoryCatalog {
         CategoryInfo(Categories.INVESTMENTS, "Investments", "📈", "#5C6BC0"),
         CategoryInfo(Categories.UPI, "UPI", "📲", "#7E57C2"),
         CategoryInfo(Categories.TRANSFERS, "Transfers", "🔁", "#78909C"),
+        CategoryInfo(Categories.SELF_TRANSFER, "Self Transfer", "🔄", "#546E7A"),
         CategoryInfo(Categories.INCOME, "Other Income", "💰", "#9CCC65"),
         CategoryInfo(Categories.INCOME_SALARY, "Salary", "💼", "#43A047"),
         CategoryInfo(Categories.INCOME_FREELANCE, "Freelance", "💻", "#00ACC1"),
@@ -27,6 +28,7 @@ object CategoryCatalog {
         CategoryInfo(Categories.INCOME_REFUND, "Refund", "↩️", "#F4511E"),
         CategoryInfo(Categories.INCOME_GIFT, "Gift", "🎁", "#E91E63"),
         CategoryInfo(Categories.INCOME_CASHBACK, "Cashback", "💸", "#0097A7"),
+        CategoryInfo(Categories.INCOME_PAYBACK, "Payback", "🤝", "#8BC34A"),
         CategoryInfo(Categories.OTHER, "Other", "📌", "#8D6E63"),
         CategoryInfo(Categories.UNCATEGORIZED, "Uncategorized", "🧾", "#9E9E9E"),
     )
@@ -51,6 +53,7 @@ object CategoryCatalog {
         info(Categories.INCOME_REFUND),
         info(Categories.INCOME_GIFT),
         info(Categories.INCOME_CASHBACK),
+        info(Categories.INCOME_PAYBACK),
         info(Categories.INCOME), // "Other Income" catch-all at the bottom
     )
 }

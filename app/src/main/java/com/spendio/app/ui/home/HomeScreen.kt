@@ -83,7 +83,7 @@ fun HomeScreen(
             )
         }
 
-        item { HeroCard(spent = state.spent, income = state.income, invested = state.invested, transfers = state.transfers) }
+        item { HeroCard(spent = state.spent, income = state.income, invested = state.invested, selfTransfers = state.selfTransfers) }
 
         if (state.needsReviewCount > 0) {
             item { ReviewBanner(count = state.needsReviewCount, onClick = onOpenReview) }
@@ -191,7 +191,7 @@ private fun MonthNav(label: String, onPrev: () -> Unit, onNext: () -> Unit, onSe
 }
 
 @Composable
-private fun HeroCard(spent: Money, income: Money, invested: Money, transfers: Money) {
+private fun HeroCard(spent: Money, income: Money, invested: Money, selfTransfers: Money) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -215,11 +215,13 @@ private fun HeroCard(spent: Money, income: Money, invested: Money, transfers: Mo
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
             )
             // Money that didn't "leave" as spending is shown here so it never silently vanishes:
-            // what you received, invested, and moved between accounts. Zero buckets are hidden.
+            // what you received, invested, and moved to your own other accounts. Zero buckets
+            // are hidden. (Transfers to other people and UPI now count as real spend, so they
+            // show up in "Spent" above instead of here — only Self Transfer is excluded.)
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                 HeroStat("Received", income)
                 if (invested.minorUnits > 0) HeroStat("Invested", invested)
-                if (transfers.minorUnits > 0) HeroStat("Transfers", transfers)
+                if (selfTransfers.minorUnits > 0) HeroStat("Self Transfer", selfTransfers)
             }
         }
     }

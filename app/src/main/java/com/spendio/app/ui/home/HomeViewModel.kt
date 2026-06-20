@@ -25,7 +25,7 @@ data class HomeUiState(
     val spent: Money,
     val income: Money,
     val invested: Money,
-    val transfers: Money,
+    val selfTransfers: Money,
     val breakdown: List<CategorySlice>,
     val recent: List<TransactionUi>,
     val needsReviewCount: Int,
@@ -57,12 +57,18 @@ class HomeViewModel @Inject constructor(
                 fun sumOf(category: String) = monthTxns
                     .filter { it.direction == Direction.DEBIT && it.categoryId == category }
                     .fold(0L) { acc, t -> acc + t.amount.minorUnits }
+                // Self-transfers can land as either leg of the pair (the outgoing debit, the
+                // matching incoming credit, or both if the bank sends two notifications), so —
+                // unlike Investments, which is debit-only — count both directions here.
+                val selfTransferTotal = monthTxns
+                    .filter { it.categoryId == Categories.SELF_TRANSFER }
+                    .fold(0L) { acc, t -> acc + t.amount.minorUnits }
                 HomeUiState(
                     month = m,
                     spent = totals.spent,
                     income = totals.income,
                     invested = Money(sumOf(Categories.INVESTMENTS)),
-                    transfers = Money(sumOf(Categories.TRANSFERS)),
+                    selfTransfers = Money(selfTransferTotal),
                     breakdown = breakdown,
                     recent = monthTxns.map { it.toUi() },
                     needsReviewCount = reviewCount,
@@ -76,4 +82,5 @@ class HomeViewModel @Inject constructor(
 
     fun nextMonth() { month.value = month.value.plusMonths(1) }
     fun prevMonth() { month.value = month.value.minusMonths(1) }
+    fun goToCurrentMonth() { month.value = YearMonth.now() }
 }

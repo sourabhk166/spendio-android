@@ -26,11 +26,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spendio.app.ui.budgets.BudgetsScreen
 import com.spendio.app.ui.editor.AddEditTransactionScreen
 import com.spendio.app.ui.home.HomeScreen
+import com.spendio.app.ui.home.HomeViewModel
 import com.spendio.app.ui.review.ReviewScreen
 import com.spendio.app.ui.search.SearchScreen
 import com.spendio.app.ui.settings.NotificationSourcesScreen
 import com.spendio.app.ui.settings.SettingsScreen
 import com.spendio.app.ui.stats.StatsScreen
+import com.spendio.app.ui.stats.StatsViewModel
 
 private enum class Screen { HOME, STATS, REVIEW, SETTINGS }
 
@@ -51,6 +53,8 @@ fun AppNav(
     var budgeting by remember { mutableStateOf(false) }
     var managingSources by remember { mutableStateOf(false) }
     val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
+    val homeViewModel: HomeViewModel = hiltViewModel()
+    val statsViewModel: StatsViewModel = hiltViewModel()
 
     val current = editor
     if (current != null) {
@@ -99,13 +103,13 @@ fun AppNav(
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 NavigationBarItem(
                     selected = screen == Screen.HOME,
-                    onClick = { screen = Screen.HOME },
+                    onClick = { homeViewModel.goToCurrentMonth(); screen = Screen.HOME },
                     icon = { Icon(Icons.Outlined.Home, contentDescription = "Home") },
                     label = { Text("Home") },
                 )
                 NavigationBarItem(
                     selected = screen == Screen.STATS,
-                    onClick = { screen = Screen.STATS },
+                    onClick = { statsViewModel.goToCurrentMonth(); screen = Screen.STATS },
                     icon = { Icon(Icons.Outlined.PieChart, contentDescription = "Stats") },
                     label = { Text("Stats") },
                 )
@@ -136,8 +140,9 @@ fun AppNav(
                 onEditTransaction = { id -> editor = EditorTarget.Edit(id) },
                 onOpenSearch = { searching = true },
                 contentPadding = innerPadding,
+                viewModel = homeViewModel,
             )
-            Screen.STATS -> StatsScreen(contentPadding = innerPadding)
+            Screen.STATS -> StatsScreen(contentPadding = innerPadding, viewModel = statsViewModel)
             Screen.REVIEW -> ReviewScreen(
                 onEditTransaction = { id -> editor = EditorTarget.Edit(id) },
                 contentPadding = innerPadding,

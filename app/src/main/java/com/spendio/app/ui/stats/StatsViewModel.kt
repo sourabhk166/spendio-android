@@ -92,4 +92,5 @@ class StatsViewModel @Inject constructor(
     fun setMode(newMode: StatsMode) { mode.value = newMode }
     fun nextMonth() { month.value = month.value.plusMonths(1) }
     fun prevMonth() { month.value = month.value.minusMonths(1) }
+    fun goToCurrentMonth() { month.value = YearMonth.now() }
 }

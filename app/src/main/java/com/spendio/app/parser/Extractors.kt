@@ -95,6 +95,15 @@ object MerchantExtractor {
             """(?:to|at)\s+([A-Za-z0-9 ._&'@*-]{2,40}?)(?=\s+(?:via|on|using|ref|upi|dt|date)\b|[.,;]|$)""",
             RegexOption.IGNORE_CASE,
         ),
+        // Incoming P2P credits ("...credited...from RAHUL SHARMA"): no "to"/"at" verb at all,
+        // so this must come last — it would otherwise shadow the "from <bank> a/c ... to <payee>"
+        // debit shape, but that shape's "to" pattern always matches first in the list above.
+        // Deliberately case-SENSITIVE (no IGNORE_CASE) and requires each word to start with a
+        // capital letter — bank prose like "from your account was debited" is all lowercase
+        // and must NOT be mistaken for a name; real names/banks are always Title Case or CAPS.
+        Regex(
+            """\bfrom\s+([A-Z][A-Za-z&'-]*(?:\s+[A-Z][A-Za-z&'-]*){0,3})(?=\s+(?i:via|on|using|ref|upi|dt|date)\b|[.,;]|$)""",
+        ),
     )
 
     fun extract(text: String): String? {

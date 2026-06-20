@@ -96,7 +96,10 @@ class SettingsViewModel @Inject constructor(
     fun toggleSource(packageName: String, enabled: Boolean) =
         viewModelScope.launch { settings.setSourceEnabled(packageName, enabled) }
 
-    fun wipeAll() = viewModelScope.launch { dataMaintenance.wipeAll() }
+    fun wipeAll(onDone: () -> Unit = {}) = viewModelScope.launch {
+        dataMaintenance.wipeAll()
+        onDone()
+    }
 
     /**
      * Builds the CSV for the chosen [range] off the main thread and hands it back via [onReady]
