@@ -26,6 +26,8 @@ class SettingsStore @Inject constructor(
         val DISABLED_SOURCES = stringSetPreferencesKey("disabled_sources")
         val USER_NAME = stringPreferencesKey("user_name")
         val AUTO_BACKUP = booleanPreferencesKey("auto_backup_enabled")
+        val RESTORE_PROMPT_HANDLED = booleanPreferencesKey("restore_prompt_handled")
+        val BATTERY_EXEMPTION_PROMPTED = booleanPreferencesKey("battery_exemption_prompted")
     }
 
     /** Whether automatic (Auto Backup) encrypted backups are on. Off by default. */
@@ -35,6 +37,27 @@ class SettingsStore @Inject constructor(
 
     suspend fun setAutoBackup(enabled: Boolean) {
         context.dataStore.edit { it[Keys.AUTO_BACKUP] = enabled }
+    }
+
+    /** True once the user has responded to the "Welcome back" restore prompt (restored or
+     *  skipped) on this install. Never part of Auto Backup (see backup_rules.xml), so a
+     *  genuinely new device always starts false; the same device remembers its choice even if
+     *  the transaction count later drops back to zero. */
+    suspend fun restorePromptHandledOnce(): Boolean =
+        context.dataStore.data.map { it[Keys.RESTORE_PROMPT_HANDLED] ?: false }.first()
+
+    suspend fun setRestorePromptHandled(handled: Boolean) {
+        context.dataStore.edit { it[Keys.RESTORE_PROMPT_HANDLED] = handled }
+    }
+
+    /** True once the one-time automatic battery-optimization-exemption prompt has fired (see
+     *  MainActivity). The manual "Background reliability" row in Settings is unaffected by
+     *  this — it can always be tapped again regardless. */
+    suspend fun batteryExemptionPromptedOnce(): Boolean =
+        context.dataStore.data.map { it[Keys.BATTERY_EXEMPTION_PROMPTED] ?: false }.first()
+
+    suspend fun setBatteryExemptionPrompted(prompted: Boolean) {
+        context.dataStore.edit { it[Keys.BATTERY_EXEMPTION_PROMPTED] = prompted }
     }
 
     /** The user's own name, used to spot self-transfers (paying your own account). Blank = unset. */

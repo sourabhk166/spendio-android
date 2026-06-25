@@ -30,8 +30,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /**
- * Shown on a fresh install when Android Auto Backup has restored an encrypted blob (new phone).
- * The user types the passphrase they set, and their data comes back.
+ * Shown when this install has no transactions yet but an encrypted backup blob is already on
+ * disk — typically a new or reinstalled device that Android Auto Backup restored the blob onto.
+ * The user types the passphrase they set, and their data comes back. Whichever button they tap,
+ * MainActivity records the decision (SettingsStore.setRestorePromptHandled) so this is asked at
+ * most once per install, not every launch.
  */
 @Composable
 fun RestorePromptScreen(
@@ -68,7 +71,7 @@ fun RestorePromptScreen(
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "We found a backup from your old phone. Enter your backup passphrase to restore everything.",
+            text = "We found an encrypted backup. Enter your passphrase to restore your transactions.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )

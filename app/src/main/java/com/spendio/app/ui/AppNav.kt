@@ -29,7 +29,8 @@ import com.spendio.app.ui.home.HomeScreen
 import com.spendio.app.ui.home.HomeViewModel
 import com.spendio.app.ui.review.ReviewScreen
 import com.spendio.app.ui.search.SearchScreen
-import com.spendio.app.ui.settings.NotificationSourcesScreen
+import com.spendio.app.ui.settings.BackupHelpScreen
+// import com.spendio.app.ui.settings.NotificationSourcesScreen — per-app source toggles disabled, see below
 import com.spendio.app.ui.settings.SettingsScreen
 import com.spendio.app.ui.stats.StatsScreen
 import com.spendio.app.ui.stats.StatsViewModel
@@ -51,7 +52,8 @@ fun AppNav(
     var editor by remember { mutableStateOf<EditorTarget?>(null) }
     var searching by remember { mutableStateOf(false) }
     var budgeting by remember { mutableStateOf(false) }
-    var managingSources by remember { mutableStateOf(false) }
+    // var managingSources by remember { mutableStateOf(false) } — see note below
+    var viewingBackupHelp by remember { mutableStateOf(false) }
     val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
     val homeViewModel: HomeViewModel = hiltViewModel()
     val statsViewModel: StatsViewModel = hiltViewModel()
@@ -78,8 +80,19 @@ fun AppNav(
         return
     }
 
-    if (managingSources) {
-        NotificationSourcesScreen(onClose = { managingSources = false })
+    // Per-app source toggles disabled: the OS notification-access permission is all-or-nothing
+    // regardless of these toggles (TxnNotificationListenerService still receives every app's
+    // notifications either way — this only gated what CapturePipeline acted on afterwards), so
+    // the granular per-app screen implied a privacy boundary it didn't actually provide. Code
+    // kept intact (NotificationSourcesScreen.kt, SettingsViewModel.sources/toggleSource,
+    // SettingsStore.disabledSources) in case a real need for it shows up later.
+    // if (managingSources) {
+    //     NotificationSourcesScreen(onClose = { managingSources = false })
+    //     return
+    // }
+
+    if (viewingBackupHelp) {
+        BackupHelpScreen(onClose = { viewingBackupHelp = false })
         return
     }
 
@@ -149,7 +162,8 @@ fun AppNav(
             )
             Screen.SETTINGS -> SettingsScreen(
                 onOpenBudgets = { budgeting = true },
-                onOpenSources = { managingSources = true },
+                // onOpenSources omitted — defaults to a no-op; see note above NotificationSourcesScreen's call site
+                onOpenBackupHelp = { viewingBackupHelp = true },
                 contentPadding = innerPadding,
             )
         }

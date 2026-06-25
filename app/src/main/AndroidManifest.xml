@@ -10,6 +10,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+      Lets Spendio ask the user, once, to exempt it from battery optimization — the most common
+      reason the notification listener gets silently killed in the background on stock/MIUI/
+      ColorOS devices. A normal permission; the actual ask is a one-time system dialog (see
+      BatteryOptimization.kt), not a runtime grant.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <application
         android:name=".SpendioApp"
         android:allowBackup="true"

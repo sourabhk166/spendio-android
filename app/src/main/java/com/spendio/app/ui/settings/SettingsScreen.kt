@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,7 +48,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spendio.app.capture.BatteryOptimization
 import com.spendio.app.ui.AutoSizeText
 
 // Guards the PBKDF2-derived backup encryption key from trivially short passphrases.
@@ -57,13 +62,14 @@ private const val MIN_PASSPHRASE_LENGTH = 8
 fun SettingsScreen(
     onOpenBudgets: () -> Unit = {},
     onOpenSources: () -> Unit = {},
+    onOpenBackupHelp: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val appLock by viewModel.appLockEnabled.collectAsStateWithLifecycle()
     val autoBackupEnabled by viewModel.autoBackupEnabled.collectAsStateWithLifecycle()
     val driveConnected by viewModel.driveConnected.collectAsStateWithLifecycle()
-    val sources by viewModel.sources.collectAsStateWithLifecycle()
+    // val sources by viewModel.sources.collectAsStateWithLifecycle() — only fed the disabled "Manage sources" row below
     val userName by viewModel.userName.collectAsStateWithLifecycle()
     var confirmWipe by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf(false) }
@@ -75,6 +81,19 @@ fun SettingsScreen(
     var driveRestorePass by remember { mutableStateOf(false) }
     var pendingDrivePass by remember { mutableStateOf<CharArray?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    // No callback exists for this system setting, so re-check it whenever the screen resumes —
+    // covers both "just came back from the battery-exemption dialog" and "changed it in
+    // system Settings directly".
+    var batteryExempt by remember { mutableStateOf(BatteryOptimization.isIgnoring(context)) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) batteryExempt = BatteryOptimization.isIgnoring(context)
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val runExport: (ExportRange) -> Unit = { range ->
         viewModel.exportCsv(range) { csv ->
@@ -164,12 +183,27 @@ fun SettingsScreen(
             )
         }
 
-        // Sources card — the full per-app list lives on its own screen to keep Settings tidy.
+        // Sources card. The per-app "Manage sources" row is disabled: the OS notification-access
+        // permission is all-or-nothing regardless of these toggles (the listener still receives
+        // every app's notifications either way; this only gated what CapturePipeline acted on
+        // afterwards), so it implied a privacy boundary it didn't actually provide. Left
+        // commented rather than deleted — NotificationSourcesScreen, SettingsViewModel.sources/
+        // toggleSource, and SettingsStore.disabledSources are all still intact underneath.
         SectionCard(title = "Notification sources") {
+            // ClickableRow(
+            //     title = "Manage sources",
+            //     subtitle = "${sources.count { it.enabled }} of ${sources.size} apps on",
+            //     onClick = onOpenSources,
+            // )
+            // HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
             ClickableRow(
-                title = "Manage sources",
-                subtitle = "${sources.count { it.enabled }} of ${sources.size} apps on",
-                onClick = onOpenSources,
+                title = "Background reliability",
+                subtitle = if (batteryExempt) {
+                    "Unrestricted — capture should keep running in the background"
+                } else {
+                    "Your phone may be killing capture in the background — tap to fix"
+                },
+                onClick = { context.startActivity(BatteryOptimization.requestIntent(context)) },
             )
         }
 
@@ -223,6 +257,12 @@ fun SettingsScreen(
                 title = "Restore from a file",
                 subtitle = "Import transactions from a backup file",
                 onClick = { openDoc.launch(arrayOf("*/*")) },
+            )
+            HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outline)
+            ClickableRow(
+                title = "How backup works",
+                subtitle = "What each option does, and why it matters",
+                onClick = onOpenBackupHelp,
             )
         }
 
