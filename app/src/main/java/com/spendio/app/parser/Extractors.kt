@@ -28,15 +28,18 @@ object AmountExtractor {
 }
 
 object DirectionDetector {
+    // Bare "debit"/"credit" exclude a following "card" — "your SBI Credit Card" or "HDFC Debit
+    // Card" names the card, it doesn't state a direction, and either can show up on either side
+    // of a transaction (a Credit Card spend is a debit; a Debit Card refund is a credit).
     private val debitRegex = Regex(
-        """\b(debited|debit|spent|paid|sent|withdrawn|withdrawal|purchased?|deducted|charged)\b""",
+        """\b(debited|debit(?!\s*card)|spent|paid|sent|withdrawn|withdrawal|purchased?|deducted|charged)\b""",
         RegexOption.IGNORE_CASE,
     )
     // Note: bare "cashback" is intentionally NOT a credit verb — promo notifications
     // ("₹10 cashback earned, unlock on your next payment") are not transactions. Real
     // cashback credits say "cashback credited", which "credited" already catches.
     private val creditRegex = Regex(
-        """\b(credited|credit|received|refund(?:ed)?|deposited|added)\b""",
+        """\b(credited|credit(?!\s*card)|received|refund(?:ed)?|deposited|added)\b""",
         RegexOption.IGNORE_CASE,
     )
 

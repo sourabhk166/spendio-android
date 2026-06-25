@@ -61,4 +61,18 @@ class TransactionDetectorTest {
             ),
         )
     }
+
+    @Test fun `e-statement with total amount due is rejected`() {
+        // Real SBI Card e-statement: mentions an amount and "Card", but it's a monthly bill
+        // notice, not a completed transaction. Uses "Amt Due" (abbreviated), not "Amount Due".
+        assertFalse(
+            detector.looksLikeTransaction(
+                notif(
+                    "E-statement of SBI Credit Card ending XX28 dated 22/06/2026 has been mailed. " +
+                        "Total Amt Due Rs 4859; Min Amt Due Rs 200; Payable by 12/07/2026. " +
+                        "Click https://sbicard.com/quickpaynet to pay your bill",
+                ),
+            ),
+        )
+    }
 }

@@ -27,10 +27,14 @@ class TransactionDetector(
             // money requests (not a completed txn)
             "requested", "is requesting", "request money", "collect request", "payment request",
             "has requested",
-            // future / scheduled / reminders / bill nudges
+            // future / scheduled / reminders / bill nudges / statements. Card statements use
+            // "Amt Due" (abbreviated), not "Amount Due" — both are listed since either spelling
+            // shows up depending on the bank — and "e-statement"/"payable by" catch the rest of
+            // that template even if a bank phrases the due-amount line differently again.
             "will be debited", "will be deducted", "will be charged", "is due", "due on",
             "due date", "reminder", "e-mandate", "mandate", "autopay", "scheduled",
-            "amount due", "pay instantly", "ignore if paid", "min amount due",
+            "amount due", "amt due", "pay instantly", "ignore if paid", "min amount due",
+            "e-statement", "payable by",
             // failures (handled separately later, dropped for now)
             "failed", "declined", "unsuccessful", "not been processed", "could not be",
             // promos / rewards / marketing (not real money movement). These often *reference*

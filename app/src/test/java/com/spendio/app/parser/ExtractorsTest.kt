@@ -53,6 +53,16 @@ class DirectionDetectorTest {
     @Test fun `prepaid does not falsely match paid`() {
         assertNull(DirectionDetector.detect("prepaid recharge plan details"))
     }
+
+    @Test fun `credit card mention before the spent verb is still a debit`() {
+        // "Credit Card" names the card, not the direction — without the lookahead, "Credit"
+        // here would out-race "spent" and the message would wrongly resolve to CREDIT.
+        assertEquals(Direction.DEBIT, DirectionDetector.detect("Your SBI Credit Card was used: Rs.283 spent at EATCLUB"))
+    }
+
+    @Test fun `debit card mention does not block a later credit verb`() {
+        assertEquals(Direction.CREDIT, DirectionDetector.detect("Your HDFC Debit Card payment of Rs.500 was refunded"))
+    }
 }
 
 class AccountExtractorTest {
