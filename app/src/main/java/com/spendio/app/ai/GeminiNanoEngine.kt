@@ -7,7 +7,7 @@ import com.spendio.app.domain.model.RawNotification
  *
  * This is intentionally a thin, isolated skeleton. The ML Kit GenAI Prompt API is alpha
  * and runs only on AICore-capable devices (e.g. Pixel 8/9), so it cannot be exercised in
- * unit tests or CI. Per ADR-011 the live model call is wired and verified on a real device
+ * unit tests or CI. The live model call is wired and verified on a real device
  * as a separate step; until then this reports unavailable and the app uses regex + heuristic.
  *
  * Intended implementation (kept as a spec so the wiring is unambiguous):
@@ -27,19 +27,19 @@ class GeminiNanoEngine(
 
     override suspend fun ensureReady(onProgress: (Float) -> Unit): Boolean {
         if (!capability.supportsGeminiNano()) return false
-        // TODO(phase-2-device): download the GenAI feature if DOWNLOADABLE, report progress.
+        // TODO: download the GenAI feature if DOWNLOADABLE, report progress.
         return false
     }
 
     override suspend fun extractTransaction(notification: RawNotification): AiExtraction? {
         if (!isAvailable()) return null
-        // TODO(phase-2-device): ML Kit GenAI Prompt API call + JSON -> AiExtraction.
+        // TODO: ML Kit GenAI Prompt API call + JSON -> AiExtraction.
         return null
     }
 
     override suspend fun classifyCategory(merchantKey: String): String? {
         if (!isAvailable()) return null
-        // TODO(phase-2-device): prompt the model to classify into a Categories id.
+        // TODO: prompt the model to classify into a Categories id.
         return null
     }
 }

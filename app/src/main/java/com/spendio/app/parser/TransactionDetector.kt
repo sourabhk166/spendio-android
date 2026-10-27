@@ -4,7 +4,7 @@ import com.spendio.app.domain.model.RawNotification
 
 /**
  * Decides whether a notification is a *completed* money movement worth parsing.
- * Rule (docs/04-lld.md §8): has a currency amount AND a debit/credit verb AND is
+ * Rule: has a currency amount AND a debit/credit verb AND is
  * not in the denylist (OTP, requests, failures, reminders, promos, future debits).
  */
 class TransactionDetector(

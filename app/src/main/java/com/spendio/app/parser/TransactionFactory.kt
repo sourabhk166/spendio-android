@@ -11,8 +11,8 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Builds a persistable [Transaction] from a [ParseResult]. Categorization is left as
- * [Categories.UNCATEGORIZED] in Phase 1 (the AI categorizer arrives in Phase 2).
+ * Builds a persistable [Transaction] from a [ParseResult]. The category defaults to
+ * [Categories.UNCATEGORIZED]; the capture pipeline assigns one via [Categorizer].
  * Stores only a hash of the raw text, never the text itself (privacy).
  */
 object TransactionFactory {

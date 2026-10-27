@@ -18,7 +18,7 @@ object AiModule {
     /**
      * Picks the on-device engine at startup. The rest of the app only sees [AiEngine].
      * Today [AiCapability] reports no Nano, so this is [NoOpAiEngine] and the app degrades
-     * gracefully (regex + heuristic). When the live ML Kit GenAI check is wired (ADR-011),
+     * gracefully (regex + heuristic). When the live ML Kit GenAI check is wired,
      * capable devices transparently get [GeminiNanoEngine].
      */
     @Provides

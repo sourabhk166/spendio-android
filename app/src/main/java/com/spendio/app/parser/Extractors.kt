@@ -5,7 +5,7 @@ import com.spendio.app.domain.model.Money
 
 /**
  * Shared, pure-Kotlin field extractors used by every parser tier. Each is a small,
- * independently unit-tested regex unit (see docs/04-lld.md §8). Keeping these
+ * independently unit-tested regex unit. Keeping these
  * framework-free is what makes the whole parser testable on the JVM.
  */
 

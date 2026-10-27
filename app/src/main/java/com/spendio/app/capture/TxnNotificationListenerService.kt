@@ -14,7 +14,7 @@ import javax.inject.Inject
 /**
  * Captures bank/UPI/card notifications. The callback returns immediately and all work
  * happens off the main thread; every exception is swallowed so a bad notification can
- * never crash the listener (docs/04-lld.md §6).
+ * never crash the listener.
  */
 @AndroidEntryPoint
 class TxnNotificationListenerService : NotificationListenerService() {

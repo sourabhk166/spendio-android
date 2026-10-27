@@ -7,7 +7,7 @@ import com.spendio.app.domain.model.ParseResult
  * when both the bank app *and* the SMS app post a notification for one payment. The key
  * deliberately excludes the source package so those cross-app duplicates merge. The DB
  * enforces a unique index on this key with INSERT OR IGNORE, making dedup atomic.
- * See docs/04-lld.md §8.
+ *
  */
 object Deduplicator {
     /** Notifications for one txn can arrive seconds apart; bucket time to absorb the skew. */

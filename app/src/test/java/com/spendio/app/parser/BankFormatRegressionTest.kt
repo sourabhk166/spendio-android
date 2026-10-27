@@ -12,7 +12,7 @@ import org.junit.Test
  * digits, reference numbers, phone numbers and names are fictional; message shapes are kept.
  * Every parsing bug becomes a test case here first, then a fix.
  */
-class RealCorpusTest {
+class BankFormatRegressionTest {
 
     private val parser = TieredTransactionParser(
         detector = TransactionDetector(),

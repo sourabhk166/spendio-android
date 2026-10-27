@@ -5,7 +5,7 @@
       Spendio is offline-first: capture, parsing, storage and the UI never touch the network.
       INTERNET is used for ONE opt-in feature only — Google Drive backup — and even then only
       passphrase-encrypted ciphertext is uploaded (the data stays unreadable to Google and us).
-      Default is off. (See ADR-001.)
+      Default is off.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -54,7 +54,7 @@
           Notification listener. The system binds this only after the user grants
           "Notification access" in settings; the signature-level BIND permission keeps
           any other app from binding it. This is how Spendio captures transactions
-          without READ_SMS (ADR-002).
+          without READ_SMS.
         -->
         <service
             android:name=".capture.TxnNotificationListenerService"

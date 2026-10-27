@@ -18,7 +18,7 @@ import javax.inject.Singleton
  * Generates and persists the SQLCipher passphrase for the local database. The 256-bit
  * random passphrase is itself encrypted with an AES key held in the **Android Keystore**
  * (hardware-backed where available) and stored as ciphertext in private prefs — so the
- * passphrase never exists in plaintext at rest. See ADR-006.
+ * passphrase never exists in plaintext at rest.
  */
 @Singleton
 class DatabaseKey @Inject constructor(

@@ -1,8 +1,8 @@
 package com.spendio.app.domain.model
 
 /**
- * System categories. In Phase 1 every captured transaction lands in [UNCATEGORIZED];
- * automatic categorization (merchant -> category) arrives in Phase 2 with the AI layer.
+ * System categories. Captured transactions are assigned one by the Categorizer
+ * (merchant rules, keywords and learned user corrections); unresolved ones land in [UNCATEGORIZED].
  */
 object Categories {
     const val UNCATEGORIZED = "uncategorized"

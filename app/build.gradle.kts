@@ -69,7 +69,7 @@ android {
     }
 }
 
-// Export Room schemas so future migrations can be unit-tested (docs/04-lld.md §12).
+// Export Room schemas so future migrations can be unit-tested.
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }

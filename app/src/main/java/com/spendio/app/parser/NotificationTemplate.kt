@@ -7,7 +7,7 @@ import com.spendio.app.domain.model.Direction
  * it may optionally capture `merchant`, `acct`, and `ref`. Any field the template
  * does not capture is filled by the shared extractors (see RegexTierParser).
  *
- * In Phase 2 these same shapes are *learned* from AI parses and cached in the
+ * These same shapes can also be *learned* from AI parses and cached in the
  * parse_templates table; the bundled seed set below bootstraps the common formats.
  */
 data class NotificationTemplate(
@@ -22,7 +22,7 @@ data class NotificationTemplate(
  * Bundled seed templates for the most common Indian bank/UPI notification shapes:
  * "<amount> debited/credited/spent/received/paid to ...". These anchor the amount
  * directly against the direction verb, which is high-precision; merchant/account/ref
- * are filled by the shared extractors. Expand this set from your real corpus in Phase 1.
+ * are filled by the shared extractors. Extend this set as new bank formats appear.
  */
 object SeedTemplates {
     private const val AMOUNT = """(?:rs\.?|inr|₹)\s?(?<amount>[0-9][0-9,]*(?:\.[0-9]{1,2})?)"""

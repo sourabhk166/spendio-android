@@ -16,7 +16,7 @@ import javax.inject.Inject
 data class Categorization(val categoryId: String, val needsReview: Boolean = false)
 
 /**
- * Resolves a merchant to a category (docs/04-lld.md §5):
+ * Resolves a merchant to a category:
  *   normalize -> cached rule -> keyword dictionary -> P2P heuristic -> AI classify -> uncategorized.
  * The keyword tier is deterministic and device-independent, so categorization works even
  * where on-device AI is unavailable (i.e. nearly all devices). User corrections feed back

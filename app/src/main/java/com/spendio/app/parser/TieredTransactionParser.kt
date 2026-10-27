@@ -4,7 +4,7 @@ import com.spendio.app.domain.model.ParseResult
 import com.spendio.app.domain.model.RawNotification
 
 /**
- * The orchestrator (docs/04-lld.md §4):
+ * The orchestrator:
  *   detector gate -> Tier 1 (regex templates) -> Tier 2 (on-device AI) -> Tier 3 (heuristic).
  *
  * When the AI tier parses an unseen format, the result is fed to [TemplateCache.learnFrom],

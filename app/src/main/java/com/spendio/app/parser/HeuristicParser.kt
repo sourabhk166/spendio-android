@@ -7,7 +7,7 @@ import com.spendio.app.domain.model.RawNotification
 /**
  * Tier 3: generic extraction for formats no template matched. Always low-confidence,
  * so the resulting transaction is flagged needsReview. This is the safety net that keeps
- * the app capturing even unseen formats (until the AI tier in Phase 2 learns them).
+ * the app capturing even unseen formats.
  */
 class HeuristicParser : TransactionParser {
     override suspend fun parse(input: RawNotification): ParseResult? {

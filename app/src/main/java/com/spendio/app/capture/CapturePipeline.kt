@@ -24,7 +24,7 @@ sealed interface CaptureOutcome {
 }
 
 /**
- * The heart of the capture path (docs/04-lld.md §6). Framework-free so it can be
+ * The heart of the capture path. Framework-free so it can be
  * unit-tested with fakes. The listener service just forwards [RawNotification]s here.
  */
 class CapturePipeline @Inject constructor(

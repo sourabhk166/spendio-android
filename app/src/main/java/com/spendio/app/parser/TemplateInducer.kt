@@ -3,7 +3,7 @@ package com.spendio.app.parser
 import com.spendio.app.domain.model.ParseResult
 
 /**
- * Turns one AI-parsed example into a reusable regex template (docs/04-lld.md §8). It locates
+ * Turns one AI-parsed example into a reusable regex template. It locates
  * the dynamic field spans (amount, account, ref, merchant) in the raw text, replaces them
  * with named capture groups, and **generalizes the static remainder** — runs of digits
  * become `\d+` (dates, times, balances) and runs of whitespace become `\s+`, while the

@@ -37,7 +37,7 @@ import com.spendio.app.R
 /**
  * First-run explainer for the Notification Access permission. Sets up the privacy
  * promise *before* sending the user to the system settings screen (prominent
- * disclosure — also required by Play review, see docs/06-prelaunch-checklist.md).
+ * disclosure, also required by Google Play policy).
  */
 @Composable
 fun PermissionScreen(

@@ -34,13 +34,13 @@ object DatabaseModule {
         val factory = SupportOpenHelperFactory(databaseKey.getOrCreatePassphrase())
         return Room.databaseBuilder(context, SpendioDatabase::class.java, SpendioDatabase.NAME)
             .openHelperFactory(factory)
-            // Pre-ship only: throwaway dogfood data. Replaced by a real Migration before release.
+            // Pre-release only; replaced by a real Migration before the first production release.
             .fallbackToDestructiveMigration()
             .build()
     }
 
     /** SQLCipher cannot open a pre-existing *plain* database, so the one-time switch to
-     *  encryption deletes it (throwaway dogfood data). Runs exactly once. */
+     *  encryption deletes it (pre-release data only). Runs exactly once. */
     private fun deleteLegacyPlainDatabase(context: Context) {
         val marker = context.getSharedPreferences("spendio_secure", Context.MODE_PRIVATE)
         if (!marker.getBoolean("encrypted_v1", false)) {

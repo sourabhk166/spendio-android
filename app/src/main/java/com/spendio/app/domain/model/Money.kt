@@ -5,7 +5,7 @@ import java.util.Locale
 
 /**
  * Money is stored as integer **paise** (1 rupee = 100 paise) to avoid floating-point
- * rounding errors. See ADR-008. Never represent money as Double/Float anywhere.
+ * rounding errors. Never represent money as Double/Float anywhere.
  */
 @JvmInline
 value class Money(val minorUnits: Long) {

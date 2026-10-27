@@ -18,7 +18,7 @@ data class AiExtraction(
 )
 
 /**
- * The single seam over all on-device AI (docs/04-lld.md §7). Implementations:
+ * The single seam over all on-device AI. Implementations:
  *  - [GeminiNanoEngine]  — ML Kit GenAI / Gemini Nano (device-only; isolated alpha API)
  *  - [NoOpAiEngine]      — everything returns null/false (no AI on this device)
  *
